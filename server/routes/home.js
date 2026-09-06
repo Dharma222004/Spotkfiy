@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db/database');
+const { ensureFreshCatalog } = require('../services/syncService');
 
 const router = express.Router();
 
@@ -24,7 +25,8 @@ function formatSongRow(m) {
   };
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+  await ensureFreshCatalog();
   const userId = (req.user && req.user.id) || 'admin-user-id';
 
   // 1. Quick picks / Recently Played

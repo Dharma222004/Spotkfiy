@@ -39,7 +39,6 @@ function getArtistImage(artistName) {
   const norm = (artistName || '').toLowerCase().trim();
   if (ARTIST_IMAGES[norm]) return ARTIST_IMAGES[norm];
 
-  // Hash-based aesthetic artist avatars
   const fallbacks = [
     'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
@@ -58,10 +57,6 @@ function getArtistImage(artistName) {
 
 /**
  * Fallback parser for Cloudinary assets when not found in .txt metadata files
- * Handles patterns like:
- * "Santhosh_Narayanan_Pradeep_Kumar_Priya_Hemesh_Vivek_-_Aval"
- * "Govind_Vasantha_Pradeep_Kumar_Shakthisree_Gopalan_-_Railin_Oligal_-_From_Blue_Star"
- * "Justin_Prabhakaran_-_Adiyae_Azhagae_-_From_Oru_Naal_Koothu"
  */
 function parseFromPublicId(publicId) {
   const parts = publicId.split('/');
@@ -92,13 +87,10 @@ function parseFromPublicId(publicId) {
     titlePart = titlePart.replace(fromMatch[0], '').trim();
   }
 
-  // Parse artists into individual items
-  // If artistPart has no commas but multiple capital-cased words or underscores
   let artists = [];
   if (artistPart.includes(',')) {
     artists = artistPart.split(',').map(a => a.trim()).filter(Boolean);
   } else {
-    // Single artist or space-joined list
     artists = [artistPart];
   }
 
@@ -116,14 +108,13 @@ function parseFromPublicId(publicId) {
  * Main synchronization engine
  */
 async function syncCloudinaryCatalog(customFolder = 'Songs') {
-  const folder = customFolder || 'Songs';
+  const folder = typeof customFolder === 'string' ? customFolder : (customFolder?.folder || 'Songs');
 
-  const syncLogStmt = db.prepare(`
-    INSERT INTO cloudinary_sync_log (started_at, status, details)
-    VALUES (CURRENT_TIMESTAMP, 'RUNNING', ?)
-  `);
-  const logResult = syncLogStmt.run(`Starting scan on Cloudinary folder: "${folder}" with Meta Data integration`);
-  const logId = logResult.lastInsertRowid;
+  console.log(`[Sync] Starting Cloudinary catalog sync for folder "${folder}"...`);
+  const logId = db.prepare(`
+    INSERT INTO cloudinary_sync_log (status, discovered, added, updated, duplicates, errors, details)
+    VALUES ('RUNNING', 0, 0, 0, 0, 0, 'Sync in progress...')
+  `).run().lastInsertRowid;
 
   let discovered = 0;
   let added = 0;
@@ -149,7 +140,6 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
 
     // 3. Prepare Database Statements
     const findByPublicId = db.prepare('SELECT id, title, artist, album FROM media_file WHERE cloudinary_public_id = ?');
-    const findByTitle = db.prepare('SELECT id FROM media_file WHERE LOWER(title) = LOWER(?)');
 
     const findArtistByName = db.prepare('SELECT id, name FROM artist WHERE LOWER(name) = LOWER(?)');
     const findArtistBySlug = db.prepare('SELECT id, name FROM artist WHERE slug = ?');
@@ -208,7 +198,6 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
       }
 
       if (existing) {
-        // Update slug and avatar if missing
         updateArtistSlug.run(slug, getArtistImage(cleanName), existing.id);
         return existing.id;
       }
@@ -244,17 +233,66 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         const pubId = res.public_id;
         const normPubId = normalizeStr(pubId);
 
-        // A. Match against parsed metadata
+        // Extract title portion if formatted as Artists_-_Title
+        let rawTitlePart = pubId;
+        let rawArtistPart = '';
+        if (pubId.includes('_-_')) {
+          const parts = pubId.split('_-_');
+          rawArtistPart = parts[0];
+          rawTitlePart = parts.slice(1).join('_-_');
+        } else if (pubId.includes(' - ')) {
+          const parts = pubId.split(' - ');
+          rawArtistPart = parts[0];
+          rawTitlePart = parts.slice(1).join(' - ');
+        }
+
+        const cleanTitlePart = rawTitlePart.replace(/_from_.*$/i, '').replace(/ - from .*$/i, '');
+        const normTitlePart = normalizeStr(cleanTitlePart);
+        const normArtistPart = normalizeStr(rawArtistPart);
+
+        // A. Match against parsed metadata with artist verification
         let matchedMeta = null;
 
         for (const meta of metadataSongs) {
           const normTitle = normalizeStr(meta.title);
-          if (!normTitle || normTitle.length < 3) continue;
+          if (!normTitle || normTitle.length < 2) continue;
 
-          // Check if publicId contains normalized title
-          if (normPubId.includes(normTitle)) {
-            matchedMeta = meta;
-            break;
+          // Check if title matches
+          const titleMatches = (normTitlePart === normTitle) ||
+            (normTitle.length >= 3 && new RegExp('(?:^|\\s|_)' + normTitle.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '(?:$|\\s|_)', 'i').test(normTitlePart));
+
+          if (titleMatches) {
+            if (rawArtistPart) {
+              const hasArtistMatch = meta.artists.some(a => {
+                const normA = normalizeStr(a);
+                return normA.length >= 3 && normArtistPart.includes(normA);
+              });
+              if (hasArtistMatch) {
+                matchedMeta = meta;
+                break;
+              }
+            } else {
+              matchedMeta = meta;
+              break;
+            }
+          }
+        }
+
+        // Secondary match: Check if public ID contains normalized title (min 4 chars) and an artist matches
+        if (!matchedMeta && rawArtistPart) {
+          for (const meta of metadataSongs) {
+            const normTitle = normalizeStr(meta.title);
+            if (!normTitle || normTitle.length < 4) continue;
+            if (normPubId.includes(normTitle)) {
+              const hasArtistMatch = meta.artists.some(a => {
+                const normA = normalizeStr(a);
+                return normA.length >= 3 && normArtistPart.includes(normA);
+              });
+              if (hasArtistMatch) {
+                matchedMeta = meta;
+                break;
+              }
+            }
           }
         }
 
@@ -291,10 +329,9 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         const keywords = `${title} ${artists.join(' ')} ${album} ${movie || ''} ${language}`.toLowerCase();
         const artistsJson = JSON.stringify(artists);
 
-        // Check if existing record exists by public_id or title
+        // Check if existing record exists strictly by public_id
         const existingByPub = findByPublicId.get(pubId);
-        const existingByTitle = !existingByPub ? findByTitle.get(title) : null;
-        const targetSongId = existingByPub ? existingByPub.id : (existingByTitle ? existingByTitle.id : null);
+        const targetSongId = existingByPub ? existingByPub.id : null;
 
         if (targetSongId) {
           // UPDATE
@@ -407,7 +444,50 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
   }
 }
 
+/**
+ * Auto-Sync Engine:
+ * Ensures catalog is fresh. Automatically runs on cold start or if cache is older than 2 minutes.
+ */
+let lastSyncTime = 0;
+let isSyncing = false;
+const AUTO_SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+
+async function ensureFreshCatalog(force = false) {
+  try {
+    const countRow = db.prepare('SELECT COUNT(*) as c FROM media_file WHERE is_active = 1').get();
+    const count = countRow ? countRow.c : 0;
+
+    if (count === 0) {
+      console.log('[AutoSync] Database has 0 songs. Running initial sync synchronously...');
+      const res = await syncCloudinaryCatalog('Songs');
+      lastSyncTime = Date.now();
+      return res;
+    }
+
+    const now = Date.now();
+    if ((now - lastSyncTime > AUTO_SYNC_INTERVAL_MS || force) && !isSyncing) {
+      isSyncing = true;
+      console.log('[AutoSync] Revalidating Cloudinary catalog in background...');
+      syncCloudinaryCatalog('Songs')
+        .then(res => {
+          lastSyncTime = Date.now();
+          console.log(`[AutoSync] Background sync complete: ${res.discovered} discovered (${res.added} added, ${res.updated} updated).`);
+        })
+        .catch(err => {
+          console.warn('[AutoSync] Background sync error:', err.message);
+        })
+        .finally(() => {
+          isSyncing = false;
+        });
+    }
+  } catch (e) {
+    console.warn('[AutoSync] Check error:', e.message);
+  }
+}
+
 module.exports = {
   syncCloudinaryCatalog,
-  getArtistImage
+  ensureFreshCatalog,
+  getArtistImage,
+  parseFromPublicId
 };

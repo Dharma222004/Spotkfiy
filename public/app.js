@@ -1202,13 +1202,13 @@
     fullscreenModal.classList.add('hidden');
   });
 
-  // Cloudinary Catalog Sync Trigger
+  // Cloudinary Catalog Sync Trigger (works on both local and Vercel)
   btnSyncCloudinary.addEventListener('click', async () => {
     btnSyncCloudinary.classList.add('spinning');
     showToast('Scanning Cloudinary "Songs" folder...');
 
     try {
-      const res = await fetch('/api/admin/sync', {
+      const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: 'Songs' })
@@ -1223,6 +1223,44 @@
       showToast('Sync error occurred');
     } finally {
       btnSyncCloudinary.classList.remove('spinning');
+    }
+  });
+
+  // Automatic Background Library Updates (discovers newly uploaded songs automatically)
+  setInterval(async () => {
+    if (document.hidden || !isAuthenticated()) return;
+    try {
+      const res = await fetch('/api/songs?limit=500');
+      const json = await res.json();
+      const newSongs = (json && json.data) || [];
+      if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
+        console.log(`[Spotkify AutoUpdate] Discovered new songs: ${allSongs.length} -> ${newSongs.length}`);
+        allSongs = newSongs;
+        const homeRes = await fetch('/api/home');
+        const homeJson = await homeRes.json();
+        homeData = (homeJson && homeJson.data) || {};
+        renderHomeView();
+        renderSidebarPlaylists();
+        showToast(`Library updated: ${newSongs.length} songs available`);
+      }
+    } catch (e) {}
+  }, 30000);
+
+  document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden && isAuthenticated()) {
+      try {
+        const res = await fetch('/api/songs?limit=500');
+        const json = await res.json();
+        const newSongs = (json && json.data) || [];
+        if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
+          allSongs = newSongs;
+          const homeRes = await fetch('/api/home');
+          const homeJson = await homeRes.json();
+          homeData = (homeJson && homeJson.data) || {};
+          renderHomeView();
+          renderSidebarPlaylists();
+        }
+      } catch (e) {}
     }
   });
 

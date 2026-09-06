@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db/database');
 const cloudinaryService = require('../services/cloudinary');
 const { slugify } = require('../services/metadataParser');
+const { ensureFreshCatalog } = require('../services/syncService');
 
 const router = express.Router();
 
@@ -30,9 +31,12 @@ function formatSongRow(m) {
  * List songs with pagination and filtering
  * GET /api/songs?page=1&limit=50&genre=Pop&language=Tamil&artist=Anirudh
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
+  // Ensure catalog is fresh (auto-revalidates in background or on cold-start)
+  await ensureFreshCatalog();
+
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 50));
   const offset = (page - 1) * limit;
   const genre = req.query.genre;
   const language = req.query.language;

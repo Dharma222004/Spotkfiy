@@ -3,9 +3,26 @@ const path = require('node:path');
 const fs = require('node:fs');
 const bcrypt = require('bcryptjs');
 
-const dbPath = process.env.DATABASE_PATH
-  ? path.resolve(process.cwd(), process.env.DATABASE_PATH)
-  : path.resolve(process.cwd(), 'data', 'navidrome.db');
+const isVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+let dbPath;
+
+if (isVercel) {
+  dbPath = path.join('/tmp', 'spotkify.db');
+  // Copy seed db if it exists in bundle and not in /tmp
+  const seedPath = path.resolve(process.cwd(), 'data', 'navidrome.db');
+  if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
+    try {
+      fs.copyFileSync(seedPath, dbPath);
+      console.log('[DB] Copied seed database to /tmp/spotkify.db');
+    } catch (e) {
+      console.warn('[DB] Could not copy seed db:', e.message);
+    }
+  }
+} else {
+  dbPath = process.env.DATABASE_PATH
+    ? path.resolve(process.cwd(), process.env.DATABASE_PATH)
+    : path.resolve(process.cwd(), 'data', 'navidrome.db');
+}
 
 // Ensure parent dir exists
 const dir = path.dirname(dbPath);
@@ -15,20 +32,126 @@ if (!fs.existsSync(dir)) {
 
 const db = new DatabaseSync(dbPath);
 
-// Enable WAL mode for high concurrency
+// Enable WAL mode
 try {
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
 } catch (err) {
-  console.warn('Note on pragmas:', err.message);
+  console.warn('[DB] Pragmas note:', err.message);
 }
 
 function initSchema() {
-  // 1. Inspect existing columns in media_file
+  // 1. Create Core Tables if they do not exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user (
+      id VARCHAR(255) PRIMARY KEY,
+      user_name VARCHAR(255) UNIQUE,
+      name VARCHAR(255),
+      email VARCHAR(255),
+      password VARCHAR(255),
+      is_admin BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS artist (
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255),
+      slug VARCHAR(255),
+      full_text TEXT,
+      large_image_url TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS album (
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255),
+      album_artist VARCHAR(255),
+      album_artist_id VARCHAR(255),
+      genre VARCHAR(100),
+      song_count INTEGER DEFAULT 0,
+      duration INTEGER DEFAULT 0,
+      large_image_url TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS media_file (
+      id VARCHAR(255) PRIMARY KEY,
+      path TEXT,
+      title VARCHAR(255),
+      artist VARCHAR(255),
+      artist_id VARCHAR(255),
+      artists_json TEXT,
+      album VARCHAR(255),
+      album_id VARCHAR(255),
+      album_artist VARCHAR(255),
+      album_artist_id VARCHAR(255),
+      duration INTEGER DEFAULT 0,
+      size INTEGER DEFAULT 0,
+      suffix VARCHAR(20),
+      genre VARCHAR(100),
+      language VARCHAR(100),
+      year INTEGER,
+      has_cover_art BOOLEAN DEFAULT 1,
+      cloudinary_public_id VARCHAR(255),
+      audio_url TEXT,
+      cover_image_url TEXT,
+      is_active BOOLEAN DEFAULT 1,
+      movie VARCHAR(255),
+      slug VARCHAR(255),
+      search_keywords TEXT,
+      full_text TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS media_file_artists (
+      media_file_id VARCHAR(255),
+      artist_id VARCHAR(255),
+      role VARCHAR(50) DEFAULT 'artist',
+      sub_role VARCHAR(50) DEFAULT '',
+      PRIMARY KEY (media_file_id, artist_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS annotation (
+      user_id VARCHAR(255),
+      item_id VARCHAR(255),
+      item_type VARCHAR(50) DEFAULT 'media_file',
+      starred BOOLEAN DEFAULT 0,
+      starred_at DATETIME,
+      rating INTEGER DEFAULT 0,
+      play_count INTEGER DEFAULT 0,
+      play_date DATETIME,
+      PRIMARY KEY (user_id, item_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS scrobbles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id VARCHAR(255),
+      media_file_id VARCHAR(255),
+      submission_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS cloudinary_sync_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      status VARCHAR(50) DEFAULT 'RUNNING',
+      discovered INTEGER DEFAULT 0,
+      added INTEGER DEFAULT 0,
+      updated INTEGER DEFAULT 0,
+      duplicates INTEGER DEFAULT 0,
+      errors INTEGER DEFAULT 0,
+      details TEXT
+    );
+  `);
+
+  // 2. Inspect media_file columns and add any missing dynamically
   const existingCols = new Set(
     db.prepare("PRAGMA table_info(media_file)").all().map(c => c.name)
   );
-
   const columnsToAdd = [
     { name: 'cloudinary_public_id', type: 'VARCHAR(255)' },
     { name: 'audio_url', type: 'TEXT' },
@@ -45,43 +168,21 @@ function initSchema() {
     if (!existingCols.has(col.name)) {
       try {
         db.exec(`ALTER TABLE media_file ADD COLUMN ${col.name} ${col.type};`);
-        console.log(`[DB] Added column media_file.${col.name}`);
-      } catch (err) {
-        console.warn(`[DB] Column media_file.${col.name} note:`, err.message);
-      }
+      } catch (err) {}
     }
   }
 
-  // Ensure slug column exists in artist table
+  // 3. Ensure artist slug and avatar
   const existingArtistCols = new Set(
     db.prepare("PRAGMA table_info(artist)").all().map(c => c.name)
   );
   if (!existingArtistCols.has('slug')) {
     try {
       db.exec('ALTER TABLE artist ADD COLUMN slug VARCHAR(255);');
-      console.log('[DB] Added column artist.slug');
-    } catch (err) {
-      console.warn('[DB] Column artist.slug note:', err.message);
-    }
+    } catch (err) {}
   }
 
-  // 2. Create cloudinary_sync_log table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS cloudinary_sync_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      completed_at DATETIME,
-      status VARCHAR(50) DEFAULT 'RUNNING',
-      discovered INTEGER DEFAULT 0,
-      added INTEGER DEFAULT 0,
-      updated INTEGER DEFAULT 0,
-      duplicates INTEGER DEFAULT 0,
-      errors INTEGER DEFAULT 0,
-      details TEXT
-    );
-  `);
-
-  // 3. Create indexes for performance
+  // 4. Create indexes for high-speed queries
   try {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_media_file_cloudinary_id ON media_file(cloudinary_public_id);
@@ -96,11 +197,9 @@ function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_mfa_media_file_id ON media_file_artists(media_file_id);
       CREATE INDEX IF NOT EXISTS idx_mfa_artist_id ON media_file_artists(artist_id);
     `);
-  } catch (err) {
-    console.warn('[DB] Index creation note:', err.message);
-  }
+  } catch (err) {}
 
-  // 4. Ensure FTS5 search table exists for media_file
+  // 5. Ensure FTS5 search table exists
   try {
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS spotkify_fts USING fts5(
@@ -114,22 +213,20 @@ function initSchema() {
         tokenize = 'porter unicode61'
       );
     `);
-  } catch (err) {
-    console.warn('[DB] FTS5 table note:', err.message);
-  }
+  } catch (err) {}
 
-  // 5. Ensure default admin user
-  const adminUser = db.prepare("SELECT * FROM user WHERE user_name = 'admin'").get();
-  if (!adminUser) {
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync('admin123', salt);
-    const userId = 'admin-user-id';
-    db.prepare(`
-      INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `).run(userId, 'admin', 'Administrator', 'admin@spotkify.local', hashedPassword);
-    console.log('[DB] Created default admin user (admin / admin123)');
-  }
+  // 6. Ensure default admin user
+  try {
+    const adminUser = db.prepare("SELECT * FROM user WHERE user_name = 'admin'").get();
+    if (!adminUser) {
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync('admin123', salt);
+      db.prepare(`
+        INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
+        VALUES ('admin-user-id', 'admin', 'Administrator', 'admin@spotkify.local', ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(hashedPassword);
+    }
+  } catch (err) {}
 }
 
 initSchema();

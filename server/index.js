@@ -60,6 +60,28 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/history', libraryRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Public Dynamic Sync & Revalidate endpoints (accessible for webhooks/crons/frontend)
+app.all('/api/sync', async (req, res) => {
+  try {
+    const { syncCloudinaryCatalog } = require('./services/syncService');
+    const folder = (req.body && req.body.folder) || req.query.folder || 'Songs';
+    const result = await syncCloudinaryCatalog(folder);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+app.all('/api/revalidate', async (req, res) => {
+  try {
+    const { syncCloudinaryCatalog } = require('./services/syncService');
+    const result = await syncCloudinaryCatalog('Songs');
+    res.json({ revalidated: true, data: result });
+  } catch (err) {
+    res.status(500).json({ revalidated: false, error: { message: err.message } });
+  }
+});
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('[Unhandled Error]', err);
@@ -71,8 +93,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`[Server] Spotkify API server listening on http://localhost:${PORT}`);
-});
+let server = null;
+if (require.main === module && !process.env.VERCEL) {
+  server = app.listen(PORT, () => {
+    console.log(`[Server] Spotkify API server listening on http://localhost:${PORT}`);
+  });
+}
 
-module.exports = { app, server };
+module.exports = app;
+module.exports.app = app;
+module.exports.server = server;
