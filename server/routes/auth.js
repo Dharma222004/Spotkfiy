@@ -12,7 +12,7 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Username and password required' } });
   }
 
-  const user = db.prepare('SELECT * FROM user WHERE user_name = ?').get(username);
+  const user = db.prepare('SELECT * FROM user WHERE LOWER(user_name) = LOWER(?)').get(username.trim());
   if (!user) {
     return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid username or password' } });
   }
@@ -22,7 +22,13 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid username or password' } });
   }
 
-  db.prepare('UPDATE user SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+  try {
+    db.prepare('UPDATE user SET updated_at = CURRENT_TIMESTAMP, last_login_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+  } catch (err) {
+    try {
+      db.prepare('UPDATE user SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+    } catch (e) {}
+  }
   const token = generateToken(user);
 
   res.json({

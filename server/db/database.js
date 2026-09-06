@@ -172,13 +172,22 @@ function initSchema() {
     }
   }
 
-  // 3. Ensure artist slug and avatar
+  // 3. Ensure artist slug, and user last_login_at column
   const existingArtistCols = new Set(
     db.prepare("PRAGMA table_info(artist)").all().map(c => c.name)
   );
   if (!existingArtistCols.has('slug')) {
     try {
       db.exec('ALTER TABLE artist ADD COLUMN slug VARCHAR(255);');
+    } catch (err) {}
+  }
+
+  const existingUserCols = new Set(
+    db.prepare("PRAGMA table_info(user)").all().map(c => c.name)
+  );
+  if (!existingUserCols.has('last_login_at')) {
+    try {
+      db.exec('ALTER TABLE user ADD COLUMN last_login_at DATETIME;');
     } catch (err) {}
   }
 
@@ -215,18 +224,29 @@ function initSchema() {
     `);
   } catch (err) {}
 
-  // 6. Ensure default admin user
+  // 6. Ensure default admin and sharu demo users
   try {
     const adminUser = db.prepare("SELECT * FROM user WHERE user_name = 'admin'").get();
+    const salt = bcrypt.genSaltSync(10);
     if (!adminUser) {
-      const salt = bcrypt.genSaltSync(10);
       const hashedPassword = bcrypt.hashSync('admin123', salt);
       db.prepare(`
         INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
         VALUES ('admin-user-id', 'admin', 'Administrator', 'admin@spotkify.local', ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(hashedPassword);
     }
-  } catch (err) {}
+
+    const sharuUser = db.prepare("SELECT * FROM user WHERE user_name = 'sharu'").get();
+    if (!sharuUser) {
+      const sharuHashed = bcrypt.hashSync('sharu@123', salt);
+      db.prepare(`
+        INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
+        VALUES ('sharu-user-id', 'sharu', 'Sharu', 'sharu@spotkify.local', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(sharuHashed);
+    }
+  } catch (err) {
+    console.warn('[DB] User seeding note:', err.message);
+  }
 }
 
 initSchema();

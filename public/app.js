@@ -1987,6 +1987,9 @@
   const loginAlertText = document.getElementById('loginAlertText');
   const btnTogglePw = document.getElementById('btnTogglePw');
   const chkRememberMe = document.getElementById('chkRememberMe');
+  const btnLoginSubmit = document.getElementById('btnLoginSubmit');
+  const btnAutofillSharu = document.getElementById('btnAutofillSharu');
+  const btnAutofillAdmin = document.getElementById('btnAutofillAdmin');
   const btnProfileMenu = document.getElementById('btnProfileMenu');
   const profileDropdown = document.getElementById('profileDropdown');
   const profileMenuContainer = document.getElementById('profileMenuContainer');
@@ -1996,12 +1999,23 @@
     return localStorage.getItem('spotkify_auth') === 'true' || sessionStorage.getItem('spotkify_auth') === 'true';
   }
 
+  function getLoggedInUser() {
+    return localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || 'sharu';
+  }
+
+  function updateUserProfileDisplay(username) {
+    const name = username || getLoggedInUser();
+    document.querySelectorAll('.profile-name-text').forEach(el => el.textContent = name);
+    document.querySelectorAll('.user-handle').forEach(el => el.textContent = name);
+  }
+
   function setupAuthentication() {
     if (isAuthenticated()) {
       document.body.classList.remove('locked');
       if (loginGate) {
         loginGate.style.display = 'none';
       }
+      updateUserProfileDisplay();
       initAppData();
     } else {
       document.body.classList.add('locked');
@@ -2031,6 +2045,35 @@
       });
     });
 
+    // Autofill Demo Account Buttons
+    if (btnAutofillSharu) {
+      btnAutofillSharu.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (loginUsername) loginUsername.value = 'sharu';
+        if (loginPassword) loginPassword.value = 'sharu@123';
+        if (loginAlertBox) loginAlertBox.classList.add('hidden');
+        [loginUsername, loginPassword].forEach(i => {
+          const wrap = i?.closest('.input-container');
+          if (wrap) wrap.classList.remove('error');
+        });
+        if (btnLoginSubmit) btnLoginSubmit.focus();
+      });
+    }
+
+    if (btnAutofillAdmin) {
+      btnAutofillAdmin.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (loginUsername) loginUsername.value = 'admin';
+        if (loginPassword) loginPassword.value = 'admin123';
+        if (loginAlertBox) loginAlertBox.classList.add('hidden');
+        [loginUsername, loginPassword].forEach(i => {
+          const wrap = i?.closest('.input-container');
+          if (wrap) wrap.classList.remove('error');
+        });
+        if (btnLoginSubmit) btnLoginSubmit.focus();
+      });
+    }
+
     // Password visibility toggle
     if (btnTogglePw && loginPassword) {
       btnTogglePw.addEventListener('click', () => {
@@ -2042,55 +2085,128 @@
       });
     }
 
-    // Login Form Submit (username: sharu, password: sharu@123)
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const enteredUser = (loginUsername.value || '').trim();
-        const enteredPass = loginPassword.value || '';
+    function showLoginError(msg) {
+      if (loginAlertText) {
+        loginAlertText.textContent = msg || 'Incorrect username or password. Please try again.';
+      }
+      if (loginAlertBox) {
+        loginAlertBox.classList.remove('hidden');
+      }
+      const card = loginGate ? loginGate.querySelector('.login-card') : null;
+      if (card) {
+        card.classList.remove('shake');
+        void card.offsetWidth; // Force reflow
+        card.classList.add('shake');
+      }
+      const passWrap = loginPassword ? loginPassword.closest('.input-container') : null;
+      if (passWrap) passWrap.classList.add('error');
+      if (loginPassword) {
+        loginPassword.select();
+      }
+    }
 
-        // Strict verification
-        if (enteredUser.toLowerCase() === 'sharu' && enteredPass === 'sharu@123') {
-          // Success!
+    // Login Form Submit (handles API authentication + offline fallback)
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const enteredUser = (loginUsername ? loginUsername.value : '').trim();
+        const enteredPass = loginPassword ? loginPassword.value : '';
+
+        if (!enteredUser || !enteredPass) {
+          showLoginError('Please enter both username and password.');
+          return;
+        }
+
+        // Set submit button loading state
+        let originalBtnHtml = '';
+        if (btnLoginSubmit) {
+          originalBtnHtml = btnLoginSubmit.innerHTML;
+          btnLoginSubmit.classList.add('loading');
+          btnLoginSubmit.disabled = true;
+          btnLoginSubmit.innerHTML = `
+            <svg class="sync-spin-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+            </svg>
+            <span>Signing in...</span>
+          `;
+        }
+
+        let loginSuccess = false;
+        let authenticatedUsername = enteredUser;
+        let authToken = null;
+
+        try {
+          // Attempt API login
+          const apiRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: enteredUser, password: enteredPass })
+          });
+
+          const resData = await apiRes.json();
+
+          if (apiRes.ok && resData && resData.data && resData.data.token) {
+            loginSuccess = true;
+            authToken = resData.data.token;
+            authenticatedUsername = (resData.data.user && resData.data.user.userName) || enteredUser;
+          } else if (
+            (enteredUser.toLowerCase() === 'sharu' && enteredPass === 'sharu@123') ||
+            (enteredUser.toLowerCase() === 'admin' && enteredPass === 'admin123')
+          ) {
+            // Graceful fallback for known demo credentials
+            loginSuccess = true;
+            authenticatedUsername = enteredUser.toLowerCase();
+          } else {
+            const errDetail = (resData && resData.error && resData.error.message) || 'Incorrect username or password. Please try again.';
+            showLoginError(errDetail);
+          }
+        } catch (fetchErr) {
+          console.warn('API login request failed, checking client credentials:', fetchErr);
+          if (
+            (enteredUser.toLowerCase() === 'sharu' && enteredPass === 'sharu@123') ||
+            (enteredUser.toLowerCase() === 'admin' && enteredPass === 'admin123')
+          ) {
+            loginSuccess = true;
+            authenticatedUsername = enteredUser.toLowerCase();
+          } else {
+            showLoginError('Connection error. Please try again or use demo: sharu / sharu@123');
+          }
+        } finally {
+          if (btnLoginSubmit) {
+            btnLoginSubmit.classList.remove('loading');
+            btnLoginSubmit.disabled = false;
+            if (originalBtnHtml) btnLoginSubmit.innerHTML = originalBtnHtml;
+          }
+        }
+
+        if (loginSuccess) {
           if (loginAlertBox) loginAlertBox.classList.add('hidden');
           const remember = chkRememberMe ? chkRememberMe.checked : true;
           if (remember) {
             localStorage.setItem('spotkify_auth', 'true');
-            localStorage.setItem('spotkify_user', 'sharu');
+            localStorage.setItem('spotkify_user', authenticatedUsername);
+            if (authToken) localStorage.setItem('spotkify_token', authToken);
           } else {
             sessionStorage.setItem('spotkify_auth', 'true');
-            sessionStorage.setItem('spotkify_user', 'sharu');
+            sessionStorage.setItem('spotkify_user', authenticatedUsername);
+            if (authToken) sessionStorage.setItem('spotkify_token', authToken);
           }
+
+          updateUserProfileDisplay(authenticatedUsername);
 
           // Smooth reveal
-          loginGate.classList.add('fade-out');
-          setTimeout(() => {
-            loginGate.style.display = 'none';
+          if (loginGate) {
+            loginGate.classList.add('fade-out');
+            setTimeout(() => {
+              loginGate.style.display = 'none';
+              document.body.classList.remove('locked');
+            }, 350);
+          } else {
             document.body.classList.remove('locked');
-          }, 350);
+          }
 
-          showToast('Welcome to Spotkify, sharu!');
+          showToast(`Welcome to Spotkify, ${authenticatedUsername}!`);
           initAppData();
-        } else {
-          // Invalid credentials
-          if (loginAlertText) {
-            loginAlertText.textContent = 'Incorrect username or password. Please try again.';
-          }
-          if (loginAlertBox) {
-            loginAlertBox.classList.remove('hidden');
-          }
-
-          const card = loginGate.querySelector('.login-card');
-          if (card) {
-            card.classList.remove('shake');
-            void card.offsetWidth; // Force reflow
-            card.classList.add('shake');
-          }
-
-          const passWrap = loginPassword.closest('.input-container');
-          if (passWrap) passWrap.classList.add('error');
-          loginPassword.value = '';
-          loginPassword.focus();
         }
       });
     }
@@ -2118,8 +2234,10 @@
       btnLogout.addEventListener('click', () => {
         localStorage.removeItem('spotkify_auth');
         localStorage.removeItem('spotkify_user');
+        localStorage.removeItem('spotkify_token');
         sessionStorage.removeItem('spotkify_auth');
         sessionStorage.removeItem('spotkify_user');
+        sessionStorage.removeItem('spotkify_token');
 
         if (profileDropdown) profileDropdown.classList.add('hidden');
         if (profileMenuContainer) profileMenuContainer.classList.remove('open');
