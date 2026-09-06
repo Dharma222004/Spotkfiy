@@ -922,8 +922,8 @@
     barTitle.textContent = song.title;
     barArtist.innerHTML = renderArtistLinksHtml(song);
     attachArtistLinkListeners(barArtist);
-    barThumb.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100';
-    barHeartBtn.classList.toggle('liked', Boolean(song.is_liked));
+    if (barThumb) barThumb.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100';
+    if (barHeartBtn) barHeartBtn.classList.toggle('liked', Boolean(song.is_liked));
     barTotalTime.textContent = formatDuration(song.duration);
 
     // If audio element is empty or points to page, pre-assign song's direct audio stream
@@ -1392,7 +1392,7 @@
     song.is_liked = nextState;
 
     if (currentSong && currentSong.id === songId) {
-      barHeartBtn.classList.toggle('liked', nextState);
+      if (barHeartBtn) barHeartBtn.classList.toggle('liked', nextState);
       if (mobileAddSvgPlus && mobileAddSvgCheck) {
         mobileAddSvgPlus.classList.toggle('hidden', nextState);
         mobileAddSvgCheck.classList.toggle('hidden', !nextState);
@@ -1413,13 +1413,15 @@
     }
   }
 
-  barHeartBtn.addEventListener('click', () => {
-    if (currentSong) {
-      toggleLikeSong(currentSong.id);
-    } else if (currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex]) {
-      toggleLikeSong(currentPlaylist[currentTrackIndex].id);
-    }
-  });
+  if (barHeartBtn) {
+    barHeartBtn.addEventListener('click', () => {
+      if (currentSong) {
+        toggleLikeSong(currentSong.id);
+      } else if (currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex]) {
+        toggleLikeSong(currentPlaylist[currentTrackIndex].id);
+      }
+    });
+  }
 
   if (mobileAddBtn) {
     mobileAddBtn.addEventListener('click', (e) => {
@@ -2075,102 +2077,88 @@
       }
     }
 
-    // Login Form Submit (handles API authentication + offline fallback)
-    if (loginForm) {
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const enteredUser = (loginUsername ? loginUsername.value : '').trim();
-        const enteredPass = loginPassword ? loginPassword.value : '';
+    // Unified Login Handler
+    async function doLogin() {
+      const enteredUser = (loginUsername ? loginUsername.value : '').trim();
+      const enteredPass = (loginPassword ? loginPassword.value : '').trim();
 
-        if (!enteredUser || !enteredPass) {
-          showLoginError('Please enter both username and password.');
-          return;
-        }
+      if (!enteredUser || !enteredPass) {
+        showLoginError('Please enter both username and password.');
+        return;
+      }
 
-        // Set submit button loading state
-        let originalBtnHtml = '';
-        if (btnLoginSubmit) {
-          originalBtnHtml = btnLoginSubmit.innerHTML;
-          btnLoginSubmit.classList.add('loading');
-          btnLoginSubmit.disabled = true;
-          btnLoginSubmit.innerHTML = `
-            <svg class="sync-spin-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
-            </svg>
-            <span>Signing in...</span>
-          `;
-        }
+      // Check credentials (sharu / sharu@123, admin / admin123, or any input)
+      const isSharu = (enteredUser.toLowerCase() === 'sharu' && (enteredPass === 'sharu@123' || enteredPass === 'sharu'));
+      const isAdmin = (enteredUser.toLowerCase() === 'admin' && (enteredPass === 'admin123' || enteredPass === 'admin'));
+      const authenticatedUsername = isSharu ? 'sharu' : (isAdmin ? 'admin' : enteredUser);
 
-        let loginSuccess = false;
-        let authenticatedUsername = enteredUser;
-        let authToken = null;
+      // Immediately unlock the application
+      if (loginAlertBox) loginAlertBox.classList.add('hidden');
+      document.body.classList.remove('locked');
+      if (loginGate) {
+        loginGate.classList.add('fade-out');
+        setTimeout(() => {
+          loginGate.style.display = 'none';
+        }, 300);
+      }
 
-        try {
-          // Attempt API login
-          const apiRes = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: enteredUser, password: enteredPass })
-          });
+      const remember = chkRememberMe ? chkRememberMe.checked : true;
+      if (remember) {
+        localStorage.setItem('spotkify_auth', 'true');
+        localStorage.setItem('spotkify_user', authenticatedUsername);
+      } else {
+        sessionStorage.setItem('spotkify_auth', 'true');
+        sessionStorage.setItem('spotkify_user', authenticatedUsername);
+      }
 
-          const resData = await apiRes.json();
+      updateUserProfileDisplay(authenticatedUsername);
+      showToast(`Welcome to Spotkify, ${authenticatedUsername}!`);
+      initAppData();
 
-          if (apiRes.ok && resData && resData.data && resData.data.token) {
-            loginSuccess = true;
-            authToken = resData.data.token;
-            authenticatedUsername = (resData.data.user && resData.data.user.userName) || enteredUser;
-          } else if (enteredUser && enteredPass) {
-            loginSuccess = true;
-            authenticatedUsername = enteredUser;
-          } else {
-            const errDetail = (resData && resData.error && resData.error.message) || 'Please enter valid username and password.';
-            showLoginError(errDetail);
-          }
-        } catch (fetchErr) {
-          console.warn('API login request notice:', fetchErr);
-          if (enteredUser && enteredPass) {
-            loginSuccess = true;
-            authenticatedUsername = enteredUser;
-          } else {
-            showLoginError('Please enter your username and password.');
-          }
-        } finally {
-          if (btnLoginSubmit) {
-            btnLoginSubmit.classList.remove('loading');
-            btnLoginSubmit.disabled = false;
-            if (originalBtnHtml) btnLoginSubmit.innerHTML = originalBtnHtml;
-          }
-        }
-
-        if (loginSuccess) {
-          if (loginAlertBox) loginAlertBox.classList.add('hidden');
-          const remember = chkRememberMe ? chkRememberMe.checked : true;
+      // Sync with API in the background to store JWT token
+      try {
+        const apiRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: enteredUser, password: enteredPass })
+        });
+        const resData = await apiRes.json();
+        if (resData && resData.data && resData.data.token) {
           if (remember) {
-            localStorage.setItem('spotkify_auth', 'true');
-            localStorage.setItem('spotkify_user', authenticatedUsername);
-            if (authToken) localStorage.setItem('spotkify_token', authToken);
+            localStorage.setItem('spotkify_token', resData.data.token);
           } else {
-            sessionStorage.setItem('spotkify_auth', 'true');
-            sessionStorage.setItem('spotkify_user', authenticatedUsername);
-            if (authToken) sessionStorage.setItem('spotkify_token', authToken);
+            sessionStorage.setItem('spotkify_token', resData.data.token);
           }
-
-          updateUserProfileDisplay(authenticatedUsername);
-
-          // Smooth reveal
-          document.body.classList.remove('locked');
-          if (loginGate) {
-            loginGate.classList.add('fade-out');
-            setTimeout(() => {
-              loginGate.style.display = 'none';
-            }, 350);
-          }
-
-          showToast(`Welcome to Spotkify, ${authenticatedUsername}!`);
-          initAppData();
         }
+      } catch (err) {
+        console.warn('Background token sync note:', err.message);
+      }
+    }
+
+    // Attach to form submit, button click, and enter key
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        doLogin();
       });
     }
+
+    if (btnLoginSubmit) {
+      btnLoginSubmit.addEventListener('click', (e) => {
+        e.preventDefault();
+        doLogin();
+      });
+    }
+
+    [loginUsername, loginPassword].forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          doLogin();
+        }
+      });
+    });
 
     // Profile Dropdown Toggle
     if (btnProfileMenu && profileDropdown) {
