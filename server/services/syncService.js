@@ -3,6 +3,7 @@ const path = require('node:path');
 const db = require('../db/database');
 const cloudinaryService = require('./cloudinary');
 const { normalizeStr, slugify, parseMetadataLine, loadAllMetadata } = require('./metadataParser');
+const { resolveArtistImage, resolveSongCover } = require('./mediaArtwork');
 
 /**
  * Generate stable IDs
@@ -11,48 +12,8 @@ function makeId(prefix = 'song') {
   return `${prefix}-${crypto.randomBytes(8).toString('hex')}`;
 }
 
-/**
- * Artist curated profile artwork dictionary
- */
-const ARTIST_IMAGES = {
-  'anirudh ravichander': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-  'a.r. rahman': 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-  'yuvan shankar raja': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-  'santhosh narayanan': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-  'sid sriram': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-  'pradeep kumar': 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&auto=format&fit=crop&q=80',
-  'dhee': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-  'harris jayaraj': 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&auto=format&fit=crop&q=80',
-  'g. v. prakash': 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80',
-  'shakthisree gopalan': 'https://images.unsplash.com/photo-1520523839898-5071282543e1?w=600&auto=format&fit=crop&q=80',
-  'sam c.s.': 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-  'sai abhyankkar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
-  'shreya ghoshal': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80',
-  'chinmayi': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80',
-  'vivek': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80',
-  'dhanush': 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&auto=format&fit=crop&q=80',
-  'dhibu ninan thomas': 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&auto=format&fit=crop&q=80',
-  'govind vasantha': 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80'
-};
-
-function getArtistImage(artistName) {
-  const norm = (artistName || '').toLowerCase().trim();
-  if (ARTIST_IMAGES[norm]) return ARTIST_IMAGES[norm];
-
-  const fallbacks = [
-    'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1520523839898-5071282543e1?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80'
-  ];
-  const hash = Math.abs(norm.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0));
-  return fallbacks[hash % fallbacks.length];
+function getArtistImage(artistName, sampleCover = null) {
+  return resolveArtistImage(artistName, sampleCover);
 }
 
 /**
@@ -189,7 +150,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
     `);
 
     // Helper to get or create artist
-    function getOrCreateArtist(artistName) {
+    function getOrCreateArtist(artistName, sampleCover = null) {
       const cleanName = artistName.trim();
       const slug = slugify(cleanName);
       let existing = findArtistByName.get(cleanName);
@@ -197,13 +158,14 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         existing = findArtistBySlug.get(slug);
       }
 
+      const avatarUrl = getArtistImage(cleanName, sampleCover);
+
       if (existing) {
-        updateArtistSlug.run(slug, getArtistImage(cleanName), existing.id);
+        updateArtistSlug.run(slug, avatarUrl, existing.id);
         return existing.id;
       }
 
       const artistId = makeId('art');
-      const avatarUrl = getArtistImage(cleanName);
       insertArtist.run(artistId, cleanName, slug, cleanName.toLowerCase(), avatarUrl);
       return artistId;
     }
@@ -317,10 +279,10 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         const duration = Math.round(Number(res.duration) || 210);
         const size = Number(res.bytes) || 5000000;
         const format = res.format || 'mp3';
-        const coverImageUrl = getArtistImage(artists[0]);
+        const coverImageUrl = resolveSongCover(title, movie, artists[0]);
 
         // Manage Artists
-        const artistIds = artists.map(a => getOrCreateArtist(a));
+        const artistIds = artists.map(a => getOrCreateArtist(a, coverImageUrl));
         const primaryArtistId = artistIds[0];
 
         // Manage Album

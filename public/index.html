@@ -181,6 +181,11 @@
       
       <!-- Top Sticky Navigation Bar -->
       <header class="topbar-glass" id="topbar">
+        <!-- Mobile User Avatar Bubble (Left) -->
+        <div class="mobile-user-avatar-wrap" id="btnMobileUserAvatar" title="User Profile">
+          <div class="mobile-user-avatar-circle">S</div>
+        </div>
+
         <div class="topbar-nav-arrows">
           <button class="arrow-btn" id="btnHistoryBack" title="Go back">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.54 21.15L6.46 12.07l9.08-9.08 1.41 1.41-7.66 7.67 7.66 7.67z"/></svg>
@@ -195,6 +200,13 @@
           <svg class="search-input-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3zm-5.5 7.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/></svg>
           <input type="text" id="spotifySearchInput" placeholder="What do you want to play?" autocomplete="off">
           <button class="clear-search-btn hidden" id="btnClearSearch">✕</button>
+        </div>
+
+        <!-- Mobile Filter Chips in Header (Exact match to Spotify mobile app!) -->
+        <div class="mobile-header-chips" id="mobileHeaderChips">
+          <button class="m-chip active" data-cat="all">All</button>
+          <button class="m-chip" data-cat="music">Music</button>
+          <button class="m-chip" data-cat="podcasts">Podcasts</button>
         </div>
 
         <!-- Top Right Actions -->
@@ -233,16 +245,35 @@
         <!-- VIEW 1: HOME VIEW -->
         <div class="view-content active" id="viewHome">
           
-          <!-- Category Filter Pills -->
-          <div class="category-pills">
+          <!-- Category Filter Pills (Desktop View) -->
+          <div class="category-pills desktop-category-pills">
             <button class="pill active" data-cat="all">All</button>
             <button class="pill" data-cat="tamil">Tamil</button>
             <button class="pill" data-cat="soundtrack">Soundtracks</button>
             <button class="pill" data-cat="artists">Artists</button>
           </div>
 
-          <!-- Time Greeting Section -->
-          <section class="greeting-section">
+          <!-- Section: Start Listening (Matching Spotify Mobile Screenshot!) -->
+          <section class="spotify-mobile-section" id="sectionStartListening">
+            <span class="spotify-subhead">Jump into a session based on your tastes</span>
+            <h1 class="spotify-section-heading">Start listening</h1>
+            <!-- Compact track rows (Othaiyadi Pathayila, Oorum Blood, Thangamey, etc.) -->
+            <div class="start-listening-list" id="startListeningList">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Section: Your favourite artists (Matching Spotify Mobile Screenshot!) -->
+          <section class="spotify-mobile-section favourite-artists-section" id="sectionFavouriteArtists">
+            <h2 class="spotify-section-heading">Your favourite artists</h2>
+            <!-- Horizontal scrollable circular singer cards -->
+            <div class="favourite-artists-shelf" id="favouriteArtistsShelf">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Desktop Quick-Pick Cards Grid (Desktop only) -->
+          <section class="greeting-section desktop-only-greeting">
             <h1 class="greeting-title" id="greetingTitle">Good evening</h1>
             <!-- 6 Quick-Pick Cards Grid -->
             <div class="quick-picks-grid" id="quickPicksGrid">
@@ -499,12 +530,16 @@
   </div> <!-- Close app-main-layout -->
 
   <!-- BOTTOM SPOTIFY PLAYER BAR -->
-  <footer class="spotify-player-bar">
-    
+  <footer class="spotify-player-bar" id="spotifyPlayerBar">
+    <!-- Mobile Mini-Player Context Header (visible on mobile above track info) -->
+    <div class="mobile-player-top-label" id="mobilePlayerTopLabel">
+      <span>Similar to the album you chose</span>
+    </div>
+
     <!-- Left Track Section -->
     <div class="player-left">
       <div class="player-thumb-wrap">
-        <img id="barThumb" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100" alt="Track Cover">
+        <img id="barThumb" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100" alt="Track Cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
         <div class="soundwave-indicator hidden" id="soundwaveIndicator">
           <span></span><span></span><span></span><span></span>
         </div>
@@ -512,12 +547,23 @@
       <div class="player-names">
         <span class="bar-title" id="barTitle">Select a track</span>
         <span class="bar-artist" id="barArtist">Cloudinary Streaming</span>
+        <!-- Mobile Device Badge (Green headphone icon + device name) -->
+        <div class="mobile-device-badge">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12v6a3 3 0 0 0 3 3h2v-8H4v-1c0-4.41 3.59-8 8-8s8 3.59 8 8v1h-3v8h2a3 3 0 0 0 3-3v-6c0-5.52-4.48-10-10-10z"/></svg>
+          <span id="mobileDeviceName">Spotkify Web</span>
+        </div>
       </div>
-      <button class="player-heart-btn" id="barHeartBtn" title="Save to Your Library">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-        </svg>
-      </button>
+      <div class="mobile-player-actions">
+        <button class="player-heart-btn" id="barHeartBtn" title="Save to Your Library">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </button>
+        <button class="mobile-mini-play-btn" id="mobileMiniPlayBtn" title="Play / Pause">
+          <svg id="mobileBarPlaySvg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="mobileBarPauseSvg" class="hidden" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+      </div>
     </div>
 
     <!-- Center Playback Controls & Scrubber -->
@@ -577,6 +623,11 @@
       <button class="control-btn" id="btnFullscreen" title="Full screen">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
       </button>
+    </div>
+
+    <!-- Mobile Mini Progress Line (along bottom edge of floating pill) -->
+    <div class="mobile-mini-progress">
+      <div class="mobile-mini-progress-fill" id="mobileMiniProgressFill"></div>
     </div>
   </footer>
   </div> <!-- Close spotify-app -->

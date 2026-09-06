@@ -49,6 +49,18 @@
   const libLikedCount = document.getElementById('libLikedCount');
   const libAllTracksCount = document.getElementById('libAllTracksCount');
 
+  // Mobile Spotify DOM
+  const btnMobileUserAvatar = document.getElementById('btnMobileUserAvatar');
+  const mobileHeaderChips = document.getElementById('mobileHeaderChips');
+  const startListeningList = document.getElementById('startListeningList');
+  const favouriteArtistsShelf = document.getElementById('favouriteArtistsShelf');
+  const spotifyPlayerBar = document.getElementById('spotifyPlayerBar');
+  const mobilePlayerTopLabel = document.getElementById('mobilePlayerTopLabel');
+  const mobileMiniPlayBtn = document.getElementById('mobileMiniPlayBtn');
+  const mobileBarPlaySvg = document.getElementById('mobileBarPlaySvg');
+  const mobileBarPauseSvg = document.getElementById('mobileBarPauseSvg');
+  const mobileMiniProgressFill = document.getElementById('mobileMiniProgressFill');
+
   // Playlist View DOM
   const playlistTitle = document.getElementById('playlistTitle');
   const playlistDesc = document.getElementById('playlistDesc');
@@ -254,10 +266,85 @@
       ? homeData.quickPicks.slice(0, 6)
       : allSongs.slice(0, 6);
 
+    // 0. Render Mobile "Start listening" Section (Matching Spotify mobile layout!)
+    if (startListeningList) {
+      const featuredKeywords = ['othaiyadi', 'oorum blood', 'thangamey', 'bae', 'kannamma', 'usuru'];
+      const featured = [];
+      for (const kw of featuredKeywords) {
+        const found = allSongs.find(s => (s.title || '').toLowerCase().includes(kw));
+        if (found && !featured.some(f => f.id === found.id)) featured.push(found);
+      }
+      for (const s of allSongs) {
+        if (featured.length >= 6) break;
+        if (!featured.some(f => f.id === s.id)) featured.push(s);
+      }
+
+      const activeSongId = (currentPlaylist[currentTrackIndex] && currentPlaylist[currentTrackIndex].id) || (allSongs[0] && allSongs[0].id);
+
+      startListeningList.innerHTML = featured.map(song => {
+        const isCurrent = song.id === activeSongId;
+        return `
+          <div class="mobile-track-row" data-song-id="${song.id}">
+            <img class="mobile-track-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
+            <div class="mobile-track-info">
+              <span class="mobile-track-title ${isCurrent ? 'active' : ''}">${song.title}</span>
+              <span class="mobile-track-artist">${song.artist}</span>
+            </div>
+            <button class="mobile-track-more-btn" title="Options" data-song-id="${song.id}">⋮</button>
+          </div>
+        `;
+      }).join('');
+
+      startListeningList.querySelectorAll('.mobile-track-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.mobile-track-more-btn')) {
+            e.stopPropagation();
+            showToast('Options for ' + row.querySelector('.mobile-track-title').textContent);
+            return;
+          }
+          const id = row.getAttribute('data-song-id');
+          playTrackById(id, featured.concat(allSongs.filter(s => !featured.some(f => f.id === s.id))));
+        });
+      });
+    }
+
+    // 0.1 Render Mobile "Your favourite artists" Circular Shelf (Matching Spotify mobile layout!)
+    if (favouriteArtistsShelf) {
+      const allArtists = (homeData && homeData.popularArtists && homeData.popularArtists.length > 0)
+        ? homeData.popularArtists
+        : [];
+      
+      const priorityOrder = ['Vivek', 'Anirudh Ravichander', 'Sid Sriram', 'Santhosh Narayanan', 'Yuvan Shankar Raja', 'Pradeep Kumar', 'A.R. Rahman', 'Dhanush', 'Shreya Ghoshal', 'G. V. Prakash', 'Harris Jayaraj', 'Ilaiyaraaja'];
+      const favList = [];
+      for (const p of priorityOrder) {
+        const found = allArtists.find(a => a.name.toLowerCase() === p.toLowerCase() || a.name.toLowerCase().includes(p.toLowerCase()));
+        if (found && !favList.some(fa => fa.name === found.name)) {
+          favList.push(found);
+        }
+      }
+      for (const a of allArtists) {
+        if (!favList.some(fa => fa.name === a.name)) favList.push(a);
+      }
+
+      favouriteArtistsShelf.innerHTML = favList.slice(0, 12).map(art => `
+        <div class="favourite-artist-card" data-slug="${art.slug || art.name}" data-artist="${art.name}">
+          <img class="favourite-artist-img" src="${art.large_image_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'}" alt="${art.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'">
+          <span class="favourite-artist-name">${art.name}</span>
+        </div>
+      `).join('');
+
+      favouriteArtistsShelf.querySelectorAll('.favourite-artist-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const slug = card.getAttribute('data-slug') || card.getAttribute('data-artist');
+          openArtistView(slug);
+        });
+      });
+    }
+
     // 1. Quick Picks Grid (6 items)
     quickPicksGrid.innerHTML = quickPicks.map((song, idx) => `
       <div class="quick-pick-card" data-song-id="${song.id}">
-        <img class="qp-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}">
+        <img class="qp-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
         <span class="qp-title">${song.title}</span>
         <button class="qp-play-btn" title="Play ${song.title}">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -639,6 +726,9 @@
     viewArtist.classList.remove('active');
     viewSearch.classList.add('active');
 
+    if (mainSearchWrap) mainSearchWrap.classList.add('search-route-active');
+    if (mobileHeaderChips) mobileHeaderChips.style.display = 'none';
+
     searchInput.focus();
     mainScrollView.scrollTop = 0;
   }
@@ -806,6 +896,16 @@
     fsAlbumName.textContent = song.movie ? `From "${song.movie}"` : (song.album || 'Single');
     fsCoverImg.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
 
+    // Update Mobile Mini Player UI
+    if (mobilePlayerTopLabel) {
+      mobilePlayerTopLabel.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
+    }
+    document.querySelectorAll('.mobile-track-row').forEach(row => {
+      const isCurrent = row.getAttribute('data-song-id') === song.id;
+      const titleEl = row.querySelector('.mobile-track-title');
+      if (titleEl) titleEl.classList.toggle('active', isCurrent);
+    });
+
     setAmbientColor(song.title);
   }
 
@@ -873,10 +973,14 @@
       barPlaySvg.classList.add('hidden');
       barPauseSvg.classList.remove('hidden');
       soundwaveIndicator.classList.remove('hidden');
+      if (mobileBarPlaySvg) mobileBarPlaySvg.classList.add('hidden');
+      if (mobileBarPauseSvg) mobileBarPauseSvg.classList.remove('hidden');
     } else {
       barPlaySvg.classList.remove('hidden');
       barPauseSvg.classList.add('hidden');
       soundwaveIndicator.classList.add('hidden');
+      if (mobileBarPlaySvg) mobileBarPlaySvg.classList.remove('hidden');
+      if (mobileBarPauseSvg) mobileBarPauseSvg.classList.add('hidden');
     }
   }
 
@@ -933,6 +1037,9 @@
       const pct = (current / total) * 100;
       progressFillBar.style.width = `${pct}%`;
       progressHandle.style.left = `${pct}%`;
+      if (mobileMiniProgressFill) {
+        mobileMiniProgressFill.style.width = `${pct}%`;
+      }
     }
   });
 
@@ -1057,6 +1164,8 @@
   // Topbar Navigation Buttons
   document.getElementById('btnNavHome').addEventListener('click', () => {
     currentRoute = 'home';
+    if (mainSearchWrap) mainSearchWrap.classList.remove('search-route-active');
+    if (mobileHeaderChips) mobileHeaderChips.style.display = '';
     viewPlaylist.classList.remove('active');
     viewSearch.classList.remove('active');
     viewArtist.classList.remove('active');
@@ -1310,6 +1419,55 @@
       else if (route === 'library') document.getElementById('btnNavLibrary').click();
     });
   });
+
+  // Mobile Mini Player Play/Pause Button
+  if (mobileMiniPlayBtn) {
+    mobileMiniPlayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlayPause();
+    });
+  }
+
+  // Floating Mini Player Click: Open Fullscreen Modal on Mobile
+  if (spotifyPlayerBar) {
+    spotifyPlayerBar.addEventListener('click', (e) => {
+      if (e.target.closest('#barHeartBtn') || e.target.closest('#mobileMiniPlayBtn') || e.target.closest('.player-center') || e.target.closest('.player-right')) {
+        return;
+      }
+      if (window.innerWidth <= 768 && btnFullscreen) {
+        btnFullscreen.click();
+      }
+    });
+  }
+
+  // Mobile Topbar User Avatar Bubble Click
+  if (btnMobileUserAvatar) {
+    btnMobileUserAvatar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (profileDropdown) {
+        profileDropdown.classList.toggle('hidden');
+      }
+    });
+  }
+
+  // Mobile Topbar Filter Chips Interaction
+  if (mobileHeaderChips) {
+    mobileHeaderChips.querySelectorAll('.m-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        mobileHeaderChips.querySelectorAll('.m-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const cat = chip.getAttribute('data-cat');
+        if (cat === 'music') {
+          const el = document.getElementById('sectionStartListening');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        } else if (cat === 'podcasts') {
+          showToast('Podcasts coming soon to Spotkify!');
+        } else {
+          mainScrollView.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    });
+  }
 
   // ==========================================================================
   // SPOTKIFY AUTHENTICATION & LOGIN GATE (sharu / sharu@123)
