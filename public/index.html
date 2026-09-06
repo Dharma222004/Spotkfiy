@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotkify – Web Player</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="description" content="Spotkify Web Player – Stream your music collection directly from Cloudinary.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="locked">
+  <!-- SPOTKIFY AUTHENTICATION GATE (sharu / sharu@123) -->
+  <div class="spotkify-login-gate" id="spotkifyLoginGate">
+    <div class="login-mesh-bg"></div>
+    <div class="login-card">
+      <div class="login-brand-hero">
+        <div class="login-logo-glow">
+          <img src="/favicon.svg" alt="Spotkify Logo" class="login-logo-img">
+        </div>
+        <h1 class="login-brand-heading">Spotkify</h1>
+        <p class="login-brand-tagline">Music for everyone • Web Player</p>
+      </div>
+
+      <div class="login-card-body">
+        <h2 class="login-form-title">Log in to Spotkify</h2>
+
+        <div class="login-alert-box hidden" id="loginAlertBox">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <span id="loginAlertText">Incorrect username or password.</span>
+        </div>
+
+        <form id="spotkifyLoginForm" class="login-form" autocomplete="off" onsubmit="return false;">
+          <div class="form-group">
+            <label for="loginUsername" class="form-label">Username</label>
+            <div class="input-container">
+              <svg class="field-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+              <input type="text" id="loginUsername" name="username" class="form-input" placeholder="Enter username" required autofocus spellcheck="false" autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="label-row">
+              <label for="loginPassword" class="form-label">Password</label>
+            </div>
+            <div class="input-container">
+              <svg class="field-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+              <input type="password" id="loginPassword" name="password" class="form-input" placeholder="Enter password" required autocomplete="current-password">
+              <button type="button" class="btn-toggle-pw" id="btnTogglePw" title="Toggle password visibility">
+                <svg id="pwEyeIcon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-options-row">
+            <label class="remember-checkbox">
+              <input type="checkbox" id="chkRememberMe" checked>
+              <span class="custom-chk"></span>
+              <span class="chk-label">Remember me</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-login-submit" id="btnLoginSubmit">
+            <span>Log In to Spotkify</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.14 12l-8.29-7.85-1.42 1.42L16.86 11H5v2z"/></svg>
+          </button>
+        </form>
+
+        <div class="login-demo-hint">
+          <span>Protected Access • Spotkify Security</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid Wrapper with 8px Spotify Gutters -->
+  <div class="spotify-app">
+    <div class="app-main-layout">
+      
+      <!-- LEFT SIDEBAR -->
+      <aside class="left-sidebar">
+      <!-- Top Navigation Card -->
+      <div class="nav-card">
+        <div class="spotkify-brand-header">
+          <img src="/favicon.svg" alt="Spotkify Logo" class="brand-logo-img">
+          <span class="brand-logo-text">Spotkify</span>
+        </div>
+        <button class="nav-btn active" id="btnNavHome" data-route="home">
+          <svg class="spotify-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zm-2-1.732a3 3 0 0 1 3 0l7.5 4.33A2 2 0 0 1 22 7.577V21a1 1 0 0 1-1 1h-6.5a1 1 0 0 1-1-1v-5h-3v5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.577a2 2 0 0 1 1-1.732l7.5-4.33z"/>
+          </svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-btn" id="btnNavSearch" data-route="search">
+          <svg class="spotify-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M10.533 1.278.887 10.924a1 1 0 0 0 0 1.414l9.646 9.646a1 1 0 0 0 1.414 0l9.646-9.646a1 1 0 0 0 0-1.414L11.947 1.278a1 1 0 0 0-1.414 0zM15 10.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z" fill-rule="evenodd"/>
+            <path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3zm-5.5 7.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/>
+          </svg>
+          <span>Search</span>
+        </button>
+      </div>
+
+      <!-- Bottom Library Card -->
+      <div class="library-card">
+        <!-- Library Header -->
+        <div class="library-header">
+          <button class="library-title-btn" id="btnNavLibrary" data-route="library">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1.5-.866zM16 20V4l4 2.31V20zM8.5 2.134A1 1 0 0 0 7 3v18a1 1 0 0 0 1.5.866l5-2.887V4.02zM9 18.27V4.73l3 1.73v10.08z"/>
+            </svg>
+            <span>Your Library</span>
+          </button>
+          <div class="library-actions">
+            <button class="icon-btn" id="btnSyncCloudinary" title="Sync Cloudinary Library">
+              <svg class="sync-spin-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Library Filter Chips -->
+        <div class="library-chips">
+          <button class="chip active" data-filter="all">Playlists</button>
+          <button class="chip" data-filter="artists">Artists</button>
+          <button class="chip" data-filter="soundtracks">Soundtracks</button>
+        </div>
+
+        <!-- Library Search & Sort Row -->
+        <div class="library-subbar">
+          <div class="library-search-wrap">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3zm-5.5 7.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/></svg>
+            <input type="text" id="librarySearchInput" placeholder="Search in Your Library">
+          </div>
+          <button class="sort-btn">
+            <span>Recents</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15 15.5l4-4-1.4-1.4-1.6 1.6V3h-2v8.7l-1.6-1.6L11 11.5l4 4zm-6-7L5 12.5l1.4 1.4 1.6-1.6V21h2v-8.7l1.6 1.6L13 12.5l-4-4z"/></svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Playlists / Library List -->
+        <div class="library-items-list" id="libraryItemsList">
+          <!-- Liked Songs Item -->
+          <div class="library-item" id="itemLikedSongs" data-target="liked">
+            <div class="liked-cover-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <div class="library-item-meta">
+              <span class="library-item-title">Liked Songs</span>
+              <span class="library-item-sub"><span class="pin-icon">📌</span> Playlist • <span id="libLikedCount">0</span> songs</span>
+            </div>
+          </div>
+
+          <!-- All Tracks Playlist -->
+          <div class="library-item" id="itemAllTracks" data-target="all">
+            <img class="library-item-img" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100" alt="Cloudinary Songs">
+            <div class="library-item-meta">
+              <span class="library-item-title">Cloudinary Master Collection</span>
+              <span class="library-item-sub">Playlist • 31 songs</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Artist & Album entries injected via JS -->
+          <div id="dynamicLibraryList"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-panel" id="mainPanel">
+      
+      <!-- Top Sticky Navigation Bar -->
+      <header class="topbar-glass" id="topbar">
+        <div class="topbar-nav-arrows">
+          <button class="arrow-btn" id="btnHistoryBack" title="Go back">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.54 21.15L6.46 12.07l9.08-9.08 1.41 1.41-7.66 7.67 7.66 7.67z"/></svg>
+          </button>
+          <button class="arrow-btn" id="btnHistoryForward" title="Go forward">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.46 21.15l-1.41-1.41 7.66-7.67-7.66-7.67 1.41-1.41 9.08 9.08z"/></svg>
+          </button>
+        </div>
+
+        <!-- Search Bar (Visible in Search View, or toggled) -->
+        <div class="main-search-wrap" id="mainSearchWrap">
+          <svg class="search-input-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3zm-5.5 7.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/></svg>
+          <input type="text" id="spotifySearchInput" placeholder="What do you want to play?" autocomplete="off">
+          <button class="clear-search-btn hidden" id="btnClearSearch">✕</button>
+        </div>
+
+        <!-- Top Right Actions -->
+        <div class="topbar-right">
+          <div class="profile-menu-container" id="profileMenuContainer">
+            <button class="profile-btn" id="btnProfileMenu" title="User Profile">
+              <img src="/favicon.svg" alt="Profile" class="profile-img">
+              <span class="profile-name-text">sharu</span>
+              <svg class="profile-arrow" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                <path d="m4.427 6.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 6H4.604a.25.25 0 0 0-.177.427z"/>
+              </svg>
+            </button>
+            <div class="profile-dropdown hidden" id="profileDropdown">
+              <div class="profile-dropdown-user">
+                <span class="user-greeting">Signed in as</span>
+                <strong class="user-handle">sharu</strong>
+              </div>
+              <div class="profile-divider"></div>
+              <button class="dropdown-item logout-action" id="btnLogout">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3H9c-1.1 0-2 .9-2 2v4h2V5h11v14H9v-4H7v4c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+                </svg>
+                <span>Log out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Main View Container -->
+      <div class="main-scroll-view" id="mainScrollView">
+        
+        <!-- Dynamic Hero Ambient Mesh Gradient -->
+        <div class="ambient-mesh" id="ambientMesh"></div>
+
+        <!-- VIEW 1: HOME VIEW -->
+        <div class="view-content active" id="viewHome">
+          
+          <!-- Category Filter Pills -->
+          <div class="category-pills">
+            <button class="pill active" data-cat="all">All</button>
+            <button class="pill" data-cat="tamil">Tamil</button>
+            <button class="pill" data-cat="soundtrack">Soundtracks</button>
+            <button class="pill" data-cat="artists">Artists</button>
+          </div>
+
+          <!-- Time Greeting Section -->
+          <section class="greeting-section">
+            <h1 class="greeting-title" id="greetingTitle">Good evening</h1>
+            <!-- 6 Quick-Pick Cards Grid -->
+            <div class="quick-picks-grid" id="quickPicksGrid">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Section 1: Trending Tamil Hits -->
+          <section class="shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Trending Master Hits</h2>
+              <button class="show-all-link" data-view="all_tracks">Show all</button>
+            </div>
+            <div class="shelf-carousel" id="trendingShelf">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Section 2: Popular Artists -->
+          <section class="shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Popular Artists</h2>
+              <span class="shelf-subtitle">Tamil cinema composers & playback legends</span>
+            </div>
+            <div class="shelf-carousel artists-carousel" id="artistsShelf">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Section 3: Featured Albums & Soundtracks -->
+          <section class="shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">Featured Soundtracks</h2>
+              <span class="shelf-subtitle">Original motion picture soundtracks</span>
+            </div>
+            <div class="shelf-carousel" id="albumsShelf">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+
+          <!-- Section 4: All Tracks Quick Preview -->
+          <section class="shelf-section">
+            <div class="shelf-header">
+              <h2 class="shelf-title">From Your Cloudinary Library</h2>
+              <button class="show-all-link" data-view="all_tracks">See full table</button>
+            </div>
+            <div class="shelf-carousel" id="libraryShelf">
+              <!-- Rendered via JS -->
+            </div>
+          </section>
+        </div>
+
+        <!-- VIEW 2: PLAYLIST / TRACK TABLE VIEW -->
+        <div class="view-content" id="viewPlaylist">
+          <!-- Playlist Header -->
+          <div class="playlist-header" id="playlistHeader">
+            <div class="playlist-cover-wrap">
+              <img id="playlistCoverImg" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600" alt="Playlist Cover">
+            </div>
+            <div class="playlist-info">
+              <span class="playlist-type" id="playlistType">Public Playlist</span>
+              <h1 class="playlist-title" id="playlistTitle">Cloudinary Audio Collection</h1>
+              <p class="playlist-desc" id="playlistDesc">All master recordings uploaded to Cloudinary apkdo69e.</p>
+              <div class="playlist-meta">
+                <span class="bold-author">Spotkify</span> • <span id="playlistTrackCount">31 songs</span>, <span id="playlistTotalDuration">about 1 hr 45 min</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Playlist Action Bar -->
+          <div class="playlist-action-bar">
+            <button class="big-play-btn" id="btnBigPlay" title="Play Playlist">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="action-circle-btn" id="btnPlaylistHeart" title="Save to Your Library">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            </button>
+            <button class="action-circle-btn" id="btnShufflePlaylist" title="Shuffle Play">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+            </button>
+          </div>
+
+          <!-- Spotify Track Table -->
+          <div class="spotify-table-container">
+            <div class="table-header-row">
+              <span class="th-col th-index">#</span>
+              <span class="th-col th-title">Title</span>
+              <span class="th-col th-album">Album</span>
+              <span class="th-col th-date">Date added</span>
+              <span class="th-col th-time">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+              </span>
+            </div>
+            <div class="table-body" id="playlistTrackRows">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3: SEARCH RESULTS & BROWSE TILES -->
+        <div class="view-content" id="viewSearch">
+          <div id="searchBrowseTiles">
+            <h2 class="section-heading">Browse all</h2>
+            <div class="genre-cards-grid">
+              <div class="genre-card" style="background-color: #e13300;" data-search="Tamil">
+                <span class="genre-name">Tamil Cinema</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200" alt="Tamil">
+              </div>
+              <div class="genre-card" style="background-color: #1e3264;" data-search="Santhosh Narayanan">
+                <span class="genre-name">Santhosh Narayanan</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200" alt="Santhosh">
+              </div>
+              <div class="genre-card" style="background-color: #8d67ab;" data-search="Pradeep Kumar">
+                <span class="genre-name">Pradeep Kumar</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200" alt="Pradeep">
+              </div>
+              <div class="genre-card" style="background-color: #e8115b;" data-search="Retro">
+                <span class="genre-name">Retro Hits</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=200" alt="Retro">
+              </div>
+              <div class="genre-card" style="background-color: #503750;" data-search="Sid Sriram">
+                <span class="genre-name">Sid Sriram</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200" alt="Sid">
+              </div>
+              <div class="genre-card" style="background-color: #0d73ec;" data-search="Dhee">
+                <span class="genre-name">Dhee</span>
+                <img class="genre-img" src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=200" alt="Dhee">
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Search Results View -->
+          <div id="searchResultsSection" class="hidden">
+            <div class="search-top-layout">
+              <div class="top-result-col">
+                <h3 class="search-section-title">Top result</h3>
+                <div class="top-result-card" id="topResultCard">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+              <div class="search-songs-col">
+                <h3 class="search-section-title">Songs</h3>
+                <div class="search-mini-rows" id="searchMiniRows">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+            </div>
+
+            <div class="search-full-table-wrap">
+              <h3 class="search-section-title">Matching Tracks</h3>
+              <div class="table-body" id="searchTableRows"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 4: DYNAMIC ARTIST VIEW -->
+        <div class="view-content" id="viewArtist">
+          <!-- Immersive Artist Hero Banner -->
+          <div class="artist-hero-header" id="artistHeroHeader">
+            <div class="artist-hero-backdrop" id="artistHeroBackdrop"></div>
+            <div class="artist-hero-content">
+              <div class="verified-badge-row">
+                <svg class="verified-icon" viewBox="0 0 24 24" width="24" height="24" fill="#3d91f4">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>Verified Artist</span>
+              </div>
+              <h1 class="artist-name-title" id="artistViewName">Artist Name</h1>
+              <p class="artist-listeners" id="artistViewStats">0 songs in your library</p>
+            </div>
+          </div>
+
+          <!-- Artist Action Bar -->
+          <div class="artist-action-bar">
+            <button class="big-play-btn" id="btnArtistPlayAll" title="Play Artist Songs">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="artist-follow-btn" id="btnArtistFollow">Following</button>
+          </div>
+
+          <!-- Popular Songs Table -->
+          <div class="artist-tracks-section">
+            <h2 class="section-subheading">Songs</h2>
+            <div class="spotify-table-container">
+              <div class="table-header-row">
+                <div class="th-index">#</div>
+                <div class="th-title">Title & Artists</div>
+                <div class="th-album">Album / Movie</div>
+                <div class="th-date">Date Added</div>
+                <div class="th-time">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm1-13h-2v6h6v-2h-4z"/></svg>
+                </div>
+              </div>
+              <div class="table-body" id="artistTrackRows">
+                <!-- Rendered dynamically via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR (Now Playing / Queue Drawer) -->
+    <aside class="right-sidebar" id="rightSidebar">
+      <div class="right-header">
+        <h3 class="right-title" id="rightPanelTitle">Now playing</h3>
+        <button class="icon-btn" id="btnCloseRightPanel" title="Close">✕</button>
+      </div>
+
+      <!-- Now Playing Content -->
+      <div class="right-scroll-content" id="nowPlayingView">
+        <div class="right-cover-wrap">
+          <img id="rightCoverImg" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600" alt="Cover">
+        </div>
+        <div class="right-meta">
+          <div class="right-track-name" id="rightTrackName">Select a song</div>
+          <div class="right-artist-name" id="rightArtistName">Cloudinary CDN</div>
+        </div>
+
+        <!-- About The Artist Card -->
+        <div class="about-artist-card">
+          <div class="artist-header-bg" id="rightArtistHeaderBg">
+            <span class="artist-badge">Verified Artist</span>
+          </div>
+          <div class="artist-card-body">
+            <h4 class="artist-name" id="rightArtistCardName">Santhosh Narayanan</h4>
+            <span class="monthly-listeners">3,420,118 monthly listeners</span>
+            <p class="artist-bio" id="rightArtistBio">Indian music composer and musician who predominantly works in Tamil cinema. Master recording streamed from Cloudinary.</p>
+          </div>
+        </div>
+
+        <!-- Next in Queue Preview -->
+        <div class="next-in-queue-card">
+          <div class="queue-card-header">
+            <span>Next in queue</span>
+            <button class="open-queue-link" id="btnOpenFullQueue">Open queue</button>
+          </div>
+          <div class="next-track-row" id="nextQueueRow">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Queue View Content -->
+      <div class="right-scroll-content hidden" id="queueView">
+        <h4 class="queue-section-label">Now playing</h4>
+        <div id="queueNowPlayingRow"></div>
+        <h4 class="queue-section-label">Next up</h4>
+        <div id="queueUpcomingRows"></div>
+      </div>
+    </aside>
+
+  </div> <!-- Close app-main-layout -->
+
+  <!-- BOTTOM SPOTIFY PLAYER BAR -->
+  <footer class="spotify-player-bar">
+    
+    <!-- Left Track Section -->
+    <div class="player-left">
+      <div class="player-thumb-wrap">
+        <img id="barThumb" src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100" alt="Track Cover">
+        <div class="soundwave-indicator hidden" id="soundwaveIndicator">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="player-names">
+        <span class="bar-title" id="barTitle">Select a track</span>
+        <span class="bar-artist" id="barArtist">Cloudinary Streaming</span>
+      </div>
+      <button class="player-heart-btn" id="barHeartBtn" title="Save to Your Library">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Center Playback Controls & Scrubber -->
+    <div class="player-center">
+      <div class="player-control-buttons">
+        <button class="control-btn" id="barBtnShuffle" title="Enable shuffle">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="control-btn" id="barBtnPrev" title="Previous">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="play-pause-circle" id="barBtnPlayPause" title="Play">
+          <svg id="barPlaySvg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="barPauseSvg" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="control-btn" id="barBtnNext" title="Next">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="control-btn" id="barBtnRepeat" title="Enable repeat">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+      </div>
+
+      <!-- Scrubber Seek Bar -->
+      <div class="playback-scrubber-row">
+        <span class="time-text" id="barCurrentTime">0:00</span>
+        <div class="spotify-progress-bar" id="seekBar">
+          <div class="progress-track">
+            <div class="progress-fill-bar" id="progressFillBar"></div>
+            <div class="progress-handle" id="progressHandle"></div>
+          </div>
+        </div>
+        <span class="time-text" id="barTotalTime">0:00</span>
+      </div>
+    </div>
+
+    <!-- Right Controls Section -->
+    <div class="player-right">
+      <button class="control-btn" id="btnToggleNowPlaying" title="Now playing view">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+      </button>
+      <button class="control-btn" id="btnToggleQueue" title="Queue">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+      </button>
+      <div class="volume-container">
+        <button class="control-btn" id="barBtnMute" title="Mute">
+          <svg id="volSvgHigh" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          <svg id="volSvgMute" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        </button>
+        <div class="spotify-volume-bar" id="volBar">
+          <div class="volume-track">
+            <div class="volume-fill-bar" id="volumeFillBar"></div>
+            <div class="volume-handle" id="volumeHandle"></div>
+          </div>
+        </div>
+      </div>
+      <button class="control-btn" id="btnFullscreen" title="Full screen">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      </button>
+    </div>
+  </footer>
+  </div> <!-- Close spotify-app -->
+
+  <!-- MOBILE BOTTOM NAVIGATION (Matches Spotify Mobile App) -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-nav-item active" data-route="home">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33z"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="mobile-nav-item" data-route="search">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3z"/></svg>
+      <span>Search</span>
+    </button>
+    <button class="mobile-nav-item" data-route="library">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1.5-.866z"/></svg>
+      <span>Your Library</span>
+    </button>
+  </nav>
+
+  <!-- FULLSCREEN IMMERSIVE PLAYER MODAL -->
+  <div class="fullscreen-player-modal hidden" id="fullscreenModal">
+    <div class="fullscreen-backdrop" id="fsBackdrop"></div>
+    <div class="fullscreen-top">
+      <div class="fs-brand">
+        <img src="/favicon.svg" alt="Spotkify" width="28" height="28" style="border-radius: 6px;">
+        <span>Spotkify</span>
+      </div>
+      <button class="icon-btn fs-close-btn" id="btnCloseFullscreen">✕</button>
+    </div>
+    <div class="fullscreen-center">
+      <div class="fs-cover-box">
+        <img id="fsCoverImg" src="" alt="Album Cover">
+      </div>
+      <div class="fs-meta-box">
+        <h1 class="fs-track-title" id="fsTrackTitle">Track Title</h1>
+        <h3 class="fs-artist-name" id="fsArtistName">Artist Name</h3>
+        <p class="fs-album-name" id="fsAlbumName">Album Name</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVISIBLE HTML5 AUDIO ENGINE -->
+  <audio id="spotifyAudioEngine" preload="auto"></audio>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="spotify-toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

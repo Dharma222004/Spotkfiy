@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment and Secrets (CRITICAL: Never commit credentials)
+.env
+.env.local
+.env.*.local
+
+# Database local storage & WAL
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/cache/
+
+# Binary executables and external submodules
+navidrome.exe
+navidrome/
+
+# Logs and temporary scratch scripts
+*.log
+scratch/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
