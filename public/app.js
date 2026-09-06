@@ -47,6 +47,7 @@
   const libraryShelf = document.getElementById('libraryShelf');
   const dynamicLibraryList = document.getElementById('dynamicLibraryList');
   const libLikedCount = document.getElementById('libLikedCount');
+  const libAllTracksCount = document.getElementById('libAllTracksCount');
 
   // Playlist View DOM
   const playlistTitle = document.getElementById('playlistTitle');
@@ -228,6 +229,7 @@
       const songsRes = await fetch('/api/songs?limit=500');
       const songsJson = await songsRes.json();
       allSongs = (songsJson && songsJson.data) || [];
+      if (libAllTracksCount) libAllTracksCount.textContent = allSongs.length;
 
       currentPlaylist = [...allSongs];
 
@@ -367,7 +369,8 @@
   // ==========================================================================
   async function renderSidebarPlaylists() {
     const likedSongs = allSongs.filter(s => s.is_liked);
-    libLikedCount.textContent = likedSongs.length;
+    if (libLikedCount) libLikedCount.textContent = likedSongs.length;
+    if (libAllTracksCount) libAllTracksCount.textContent = allSongs.length;
 
     let artistsList = [];
     if (homeData && homeData.popularArtists && homeData.popularArtists.length > 0) {
