@@ -5,6 +5,7 @@
 
 const ARTIST_PORTRAITS = {
   'vivek': '/images/artists/vivek.jpg',
+  'anirudh': '/images/artists/anirudh.jpg',
   'anirudh ravichander': '/images/artists/anirudh.jpg',
   'sid sriram': 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Sid_Sriram.jpg',
   'santhosh narayanan': 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Santhosh_Narayanan_-_WIki_profile.jpg',

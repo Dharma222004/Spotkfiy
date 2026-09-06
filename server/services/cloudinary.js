@@ -44,7 +44,32 @@ async function scanAudioResources(folder = defaultFolder, nextCursor = null) {
     throw new Error('Cloudinary credentials are not fully configured in environment variables.');
   }
 
-  // 1. Try resources_by_asset_folder if a folder is specified
+  // 1. Try Cloudinary Search API first (Cloudinary Search returns duration and comprehensive metadata)
+  try {
+    let expression = 'resource_type:video';
+    if (folder) {
+      expression += ` AND (folder:"${folder}" OR asset_folder:"${folder}")`;
+    }
+    const searchReq = cloudinary.search
+      .expression(expression)
+      .max_results(500);
+
+    if (nextCursor) {
+      searchReq.next_cursor(nextCursor);
+    }
+
+    const searchResult = await searchReq.execute();
+    if (searchResult && searchResult.resources && searchResult.resources.length > 0) {
+      return {
+        resources: searchResult.resources,
+        nextCursor: searchResult.next_cursor || null
+      };
+    }
+  } catch (searchErr) {
+    console.warn('[Cloudinary] Search API note, falling back to Admin API:', searchErr.message);
+  }
+
+  // 2. Try resources_by_asset_folder if a folder is specified
   if (folder) {
     try {
       const assetOptions = { max_results: 500 };
@@ -61,7 +86,7 @@ async function scanAudioResources(folder = defaultFolder, nextCursor = null) {
     }
   }
 
-  // 2. Try prefix-based scanning
+  // 3. Try prefix-based scanning
   const options = {
     resource_type: 'video',
     type: 'upload',
@@ -75,7 +100,7 @@ async function scanAudioResources(folder = defaultFolder, nextCursor = null) {
 
   const result = await cloudinary.api.resources(options);
 
-  // 3. If prefix returned 0 resources, try scanning video resources directly
+  // 4. If prefix returned 0 resources, try scanning video resources directly
   if ((!result.resources || result.resources.length === 0) && folder) {
     try {
       const allRes = await cloudinary.api.resources({

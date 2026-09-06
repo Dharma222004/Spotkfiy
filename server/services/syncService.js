@@ -183,7 +183,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         primaryArtistName,
         primaryArtistId,
         'Soundtrack',
-        210,
+        0,
         coverUrl || getArtistImage(primaryArtistName)
       );
       return albumId;
@@ -276,7 +276,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
 
         // Playback details
         const audioUrl = res.secure_url || cloudinaryService.getAudioStreamUrl(pubId);
-        const duration = Math.round(Number(res.duration) || 210);
+        const duration = Math.round(Number(res.duration) || 0);
         const size = Number(res.bytes) || 5000000;
         const format = res.format || 'mp3';
         const coverImageUrl = resolveSongCover(title, movie, artists[0]);
@@ -368,6 +368,17 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         errorDetails.push(`Error on ${res.public_id}: ${itemErr.message}`);
         console.error(`[Sync] Error processing resource ${res.public_id}:`, itemErr.message);
       }
+    }
+
+    // Update aggregated album duration and song counts
+    try {
+      db.exec(`
+        UPDATE album SET
+          duration = (SELECT COALESCE(SUM(duration), 0) FROM media_file WHERE album_id = album.id),
+          song_count = (SELECT COUNT(*) FROM media_file WHERE album_id = album.id)
+      `);
+    } catch (albErr) {
+      console.warn('[Sync] Album aggregation update note:', albErr.message);
     }
 
     const summary = `Completed: Discovered ${discovered}, Added ${added}, Updated ${updated}, Duplicates ${duplicates}, Errors ${errors}.`;

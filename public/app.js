@@ -146,7 +146,7 @@
 
   // Format seconds to mm:ss
   function formatDuration(sec) {
-    if (isNaN(sec) || sec < 0) return '0:00';
+    if (isNaN(sec) || sec === null || sec === undefined || sec <= 0) return '--:--';
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -500,7 +500,7 @@
     playlistCoverImg.src = coverUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
     playlistTrackCount.textContent = `${trackList.length} songs`;
 
-    const totalSeconds = trackList.reduce((acc, s) => acc + (s.duration || 210), 0);
+    const totalSeconds = trackList.reduce((acc, s) => acc + (s.duration || 0), 0);
     const hours = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
     playlistTotalDuration.textContent = hours > 0 ? `${hours} hr ${mins} min` : `${mins} min`;
@@ -551,7 +551,7 @@
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <span>${formatDuration(song.duration || 210)}</span>
+            <span class="row-dur-span" data-song-id="${song.id}">${formatDuration(song.duration)}</span>
           </div>
         </div>
       `;
@@ -679,7 +679,7 @@
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <span>${formatDuration(song.duration || 210)}</span>
+            <span class="row-dur-span" data-song-id="${song.id}">${formatDuration(song.duration)}</span>
           </div>
         </div>
       `;
@@ -804,7 +804,7 @@
               </div>
             </div>
             <div class="row-time-col">
-              <span>${formatDuration(s.duration || 210)}</span>
+              <span class="row-dur-span" data-song-id="${s.id}">${formatDuration(s.duration)}</span>
             </div>
           </div>
         `).join('');
@@ -831,7 +831,7 @@
             </div>
             <div class="row-album-col">${song.movie ? `From "${song.movie}"` : (song.album || 'Single')}</div>
             <div class="row-date-col">${song.language || 'Master'}</div>
-            <div class="row-time-col"><span>${formatDuration(song.duration || 210)}</span></div>
+            <div class="row-time-col"><span class="row-dur-span" data-song-id="${song.id}">${formatDuration(song.duration)}</span></div>
           </div>
         `).join('');
 
@@ -878,7 +878,7 @@
     attachArtistLinkListeners(barArtist);
     barThumb.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100';
     barHeartBtn.classList.toggle('liked', Boolean(song.is_liked));
-    barTotalTime.textContent = formatDuration(song.duration || 210);
+    barTotalTime.textContent = formatDuration(song.duration);
 
     // Update Right Panel UI
     rightTrackName.textContent = song.title;
@@ -1026,6 +1026,21 @@
   }
 
   // Audio Event Listeners
+  audio.addEventListener('loadedmetadata', () => {
+    const total = audio.duration;
+    if (total && !isNaN(total) && total > 0) {
+      const rounded = Math.round(total);
+      barTotalTime.textContent = formatDuration(rounded);
+      if (currentPlaylist && currentPlaylist[currentTrackIndex]) {
+        const s = currentPlaylist[currentTrackIndex];
+        s.duration = rounded;
+        document.querySelectorAll(`.row-dur-span[data-song-id="${s.id}"]`).forEach(el => {
+          el.textContent = formatDuration(rounded);
+        });
+      }
+    }
+  });
+
   audio.addEventListener('timeupdate', () => {
     const current = audio.currentTime || 0;
     const total = audio.duration || 0;
