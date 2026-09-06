@@ -6,6 +6,8 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+test.env
+*.env
 
 # Database local storage & WAL
 data/*.db
