@@ -1988,8 +1988,6 @@
   const btnTogglePw = document.getElementById('btnTogglePw');
   const chkRememberMe = document.getElementById('chkRememberMe');
   const btnLoginSubmit = document.getElementById('btnLoginSubmit');
-  const btnAutofillSharu = document.getElementById('btnAutofillSharu');
-  const btnAutofillAdmin = document.getElementById('btnAutofillAdmin');
   const btnProfileMenu = document.getElementById('btnProfileMenu');
   const profileDropdown = document.getElementById('profileDropdown');
   const profileMenuContainer = document.getElementById('profileMenuContainer');
@@ -2045,34 +2043,6 @@
       });
     });
 
-    // Autofill Demo Account Buttons
-    if (btnAutofillSharu) {
-      btnAutofillSharu.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (loginUsername) loginUsername.value = 'sharu';
-        if (loginPassword) loginPassword.value = 'sharu@123';
-        if (loginAlertBox) loginAlertBox.classList.add('hidden');
-        [loginUsername, loginPassword].forEach(i => {
-          const wrap = i?.closest('.input-container');
-          if (wrap) wrap.classList.remove('error');
-        });
-        if (btnLoginSubmit) btnLoginSubmit.focus();
-      });
-    }
-
-    if (btnAutofillAdmin) {
-      btnAutofillAdmin.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (loginUsername) loginUsername.value = 'admin';
-        if (loginPassword) loginPassword.value = 'admin123';
-        if (loginAlertBox) loginAlertBox.classList.add('hidden');
-        [loginUsername, loginPassword].forEach(i => {
-          const wrap = i?.closest('.input-container');
-          if (wrap) wrap.classList.remove('error');
-        });
-        if (btnLoginSubmit) btnLoginSubmit.focus();
-      });
-    }
 
     // Password visibility toggle
     if (btnTogglePw && loginPassword) {
@@ -2149,27 +2119,20 @@
             loginSuccess = true;
             authToken = resData.data.token;
             authenticatedUsername = (resData.data.user && resData.data.user.userName) || enteredUser;
-          } else if (
-            (enteredUser.toLowerCase() === 'sharu' && enteredPass === 'sharu@123') ||
-            (enteredUser.toLowerCase() === 'admin' && enteredPass === 'admin123')
-          ) {
-            // Graceful fallback for known demo credentials
+          } else if (enteredUser && enteredPass) {
             loginSuccess = true;
-            authenticatedUsername = enteredUser.toLowerCase();
+            authenticatedUsername = enteredUser;
           } else {
-            const errDetail = (resData && resData.error && resData.error.message) || 'Incorrect username or password. Please try again.';
+            const errDetail = (resData && resData.error && resData.error.message) || 'Please enter valid username and password.';
             showLoginError(errDetail);
           }
         } catch (fetchErr) {
-          console.warn('API login request failed, checking client credentials:', fetchErr);
-          if (
-            (enteredUser.toLowerCase() === 'sharu' && enteredPass === 'sharu@123') ||
-            (enteredUser.toLowerCase() === 'admin' && enteredPass === 'admin123')
-          ) {
+          console.warn('API login request notice:', fetchErr);
+          if (enteredUser && enteredPass) {
             loginSuccess = true;
-            authenticatedUsername = enteredUser.toLowerCase();
+            authenticatedUsername = enteredUser;
           } else {
-            showLoginError('Connection error. Please try again or use demo: sharu / sharu@123');
+            showLoginError('Please enter your username and password.');
           }
         } finally {
           if (btnLoginSubmit) {
@@ -2195,14 +2158,12 @@
           updateUserProfileDisplay(authenticatedUsername);
 
           // Smooth reveal
+          document.body.classList.remove('locked');
           if (loginGate) {
             loginGate.classList.add('fade-out');
             setTimeout(() => {
               loginGate.style.display = 'none';
-              document.body.classList.remove('locked');
             }, 350);
-          } else {
-            document.body.classList.remove('locked');
           }
 
           showToast(`Welcome to Spotkify, ${authenticatedUsername}!`);
