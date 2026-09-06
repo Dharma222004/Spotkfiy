@@ -286,8 +286,10 @@
       currentPlaylist = [...allSongs];
 
       if (allSongs.length > 0) {
-        currentTrackIndex = 0;
-        loadTrackIntoPlayerBar(allSongs[0]);
+        const initialSong = allSongs.find(s => (s.title || '').toLowerCase().includes('othaiyadi')) || allSongs[0];
+        const idx = allSongs.indexOf(initialSong);
+        currentTrackIndex = idx !== -1 ? idx : 0;
+        loadTrackIntoPlayerBar(initialSong);
       }
       updateVolumeUI(currentVolume);
 
