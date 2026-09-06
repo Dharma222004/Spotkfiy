@@ -56,10 +56,46 @@
   const favouriteArtistsShelf = document.getElementById('favouriteArtistsShelf');
   const spotifyPlayerBar = document.getElementById('spotifyPlayerBar');
   const mobilePlayerTopLabel = document.getElementById('mobilePlayerTopLabel');
+  const mobilePlayerTopText = document.getElementById('mobilePlayerTopText');
   const mobileMiniPlayBtn = document.getElementById('mobileMiniPlayBtn');
   const mobileBarPlaySvg = document.getElementById('mobileBarPlaySvg');
   const mobileBarPauseSvg = document.getElementById('mobileBarPauseSvg');
   const mobileMiniProgressFill = document.getElementById('mobileMiniProgressFill');
+  const mobileConnectBtn = document.getElementById('mobileConnectBtn');
+  const mobileAddBtn = document.getElementById('mobileAddBtn');
+  const mobileAddSvgPlus = document.getElementById('mobileAddSvgPlus');
+  const mobileAddSvgCheck = document.getElementById('mobileAddSvgCheck');
+  const mobileDeviceBadge = document.getElementById('mobileDeviceBadge');
+  const mobileDeviceName = document.getElementById('mobileDeviceName');
+
+  // Mobile Bottom Sheets & Modals
+  const devicePickerSheet = document.getElementById('devicePickerSheet');
+  const btnCloseDeviceSheet = document.getElementById('btnCloseDeviceSheet');
+  const deviceSheetBackdrop = document.getElementById('deviceSheetBackdrop');
+  const deviceListGroup = document.getElementById('deviceListGroup');
+
+  const premiumSheet = document.getElementById('premiumSheet');
+  const btnClosePremiumSheet = document.getElementById('btnClosePremiumSheet');
+  const premiumSheetBackdrop = document.getElementById('premiumSheetBackdrop');
+  const btnGetPremium = document.getElementById('btnGetPremium');
+
+  const createSheet = document.getElementById('createSheet');
+  const btnCloseCreateSheet = document.getElementById('btnCloseCreateSheet');
+  const createSheetBackdrop = document.getElementById('createSheetBackdrop');
+  const btnCreateNewPlaylist = document.getElementById('btnCreateNewPlaylist');
+  const btnCreateBlend = document.getElementById('btnCreateBlend');
+
+  const trackContextSheet = document.getElementById('trackContextSheet');
+  const contextSheetBackdrop = document.getElementById('contextSheetBackdrop');
+  const contextTrackCover = document.getElementById('contextTrackCover');
+  const contextTrackTitle = document.getElementById('contextTrackTitle');
+  const contextTrackArtist = document.getElementById('contextTrackArtist');
+  const btnContextLike = document.getElementById('btnContextLike');
+  const btnContextLikeText = document.getElementById('btnContextLikeText');
+  const btnContextAddToPlaylist = document.getElementById('btnContextAddToPlaylist');
+  const btnContextViewArtist = document.getElementById('btnContextViewArtist');
+  const btnContextShare = document.getElementById('btnContextShare');
+  let currentContextSong = null;
 
   // Playlist View DOM
   const playlistTitle = document.getElementById('playlistTitle');
@@ -273,14 +309,14 @@
 
     // 0. Render Mobile "Start listening" Section (Matching Spotify mobile layout!)
     if (startListeningList) {
-      const featuredKeywords = ['othaiyadi', 'oorum blood', 'thangamey', 'bae', 'kannamma', 'usuru'];
+      const featuredKeywords = ['othaiyadi', 'oorum blood', 'thangamey', 'bae', 'kannamma', 'usuru', 'yennai maatrum', 'railin', 'pottala', 'mogathirai', 'maya nadhi', 'aval'];
       const featured = [];
       for (const kw of featuredKeywords) {
         const found = allSongs.find(s => (s.title || '').toLowerCase().includes(kw));
         if (found && !featured.some(f => f.id === found.id)) featured.push(found);
       }
       for (const s of allSongs) {
-        if (featured.length >= 6) break;
+        if (featured.length >= 12) break;
         if (!featured.some(f => f.id === s.id)) featured.push(s);
       }
 
@@ -288,11 +324,12 @@
 
       startListeningList.innerHTML = featured.map(song => {
         const isCurrent = song.id === activeSongId;
+        const prefix = isCurrent && isPlaying ? '<span class="playing-dot-prefix" style="color:#1ed760; font-weight:800; margin-right:4px;">...</span>' : '';
         return `
           <div class="mobile-track-row" data-song-id="${song.id}">
             <img class="mobile-track-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
             <div class="mobile-track-info">
-              <span class="mobile-track-title ${isCurrent ? 'active' : ''}">${song.title}</span>
+              <span class="mobile-track-title ${isCurrent ? 'active' : ''}">${prefix}${song.title}</span>
               <span class="mobile-track-artist">${song.artist}</span>
             </div>
             <button class="mobile-track-more-btn" title="Options" data-song-id="${song.id}">⋮</button>
@@ -302,12 +339,13 @@
 
       startListeningList.querySelectorAll('.mobile-track-row').forEach(row => {
         row.addEventListener('click', (e) => {
+          const id = row.getAttribute('data-song-id');
+          const song = allSongs.find(s => s.id === id);
           if (e.target.closest('.mobile-track-more-btn')) {
             e.stopPropagation();
-            showToast('Options for ' + row.querySelector('.mobile-track-title').textContent);
+            if (song) openTrackContextSheet(song);
             return;
           }
-          const id = row.getAttribute('data-song-id');
           playTrackById(id, featured.concat(allSongs.filter(s => !featured.some(f => f.id === s.id))));
         });
       });
@@ -909,13 +947,26 @@
     fsCoverImg.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
 
     // Update Mobile Mini Player UI
-    if (mobilePlayerTopLabel) {
+    if (mobilePlayerTopText) {
+      mobilePlayerTopText.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
+    } else if (mobilePlayerTopLabel) {
       mobilePlayerTopLabel.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
+    }
+    if (mobileAddSvgPlus && mobileAddSvgCheck) {
+      mobileAddSvgPlus.classList.toggle('hidden', Boolean(song.is_liked));
+      mobileAddSvgCheck.classList.toggle('hidden', !Boolean(song.is_liked));
     }
     document.querySelectorAll('.mobile-track-row').forEach(row => {
       const isCurrent = row.getAttribute('data-song-id') === song.id;
       const titleEl = row.querySelector('.mobile-track-title');
-      if (titleEl) titleEl.classList.toggle('active', isCurrent);
+      if (titleEl) {
+        titleEl.classList.toggle('active', isCurrent);
+        const existingPrefix = titleEl.querySelector('.playing-dot-prefix');
+        if (existingPrefix) existingPrefix.remove();
+        if (isCurrent && isPlaying) {
+          titleEl.insertAdjacentHTML('afterbegin', '<span class="playing-dot-prefix" style="color:#1ed760; font-weight:800; margin-right:4px;">...</span>');
+        }
+      }
     });
 
     setAmbientColor(song.title);
@@ -1057,6 +1108,24 @@
           }
         } else {
           row.classList.remove('playing');
+        }
+      });
+
+      // Synchronize playing indicator on mobile track rows
+      document.querySelectorAll('.mobile-track-row').forEach(row => {
+        const id = row.getAttribute('data-song-id');
+        const isCurrent = id === currentSong.id;
+        const titleEl = row.querySelector('.mobile-track-title');
+        if (titleEl) {
+          titleEl.classList.toggle('active', isCurrent);
+          const dot = titleEl.querySelector('.playing-dot-prefix');
+          if (isCurrent && playing) {
+            if (!dot) {
+              titleEl.insertAdjacentHTML('afterbegin', '<span class="playing-dot-prefix" style="color:#1ed760; font-weight:800; margin-right:4px;">...</span>');
+            }
+          } else {
+            if (dot) dot.remove();
+          }
         }
       });
     }
@@ -1322,6 +1391,10 @@
 
     if (currentSong && currentSong.id === songId) {
       barHeartBtn.classList.toggle('liked', nextState);
+      if (mobileAddSvgPlus && mobileAddSvgCheck) {
+        mobileAddSvgPlus.classList.toggle('hidden', nextState);
+        mobileAddSvgCheck.classList.toggle('hidden', !nextState);
+      }
     }
 
     renderSidebarPlaylists();
@@ -1345,6 +1418,17 @@
       toggleLikeSong(currentPlaylist[currentTrackIndex].id);
     }
   });
+
+  if (mobileAddBtn) {
+    mobileAddBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSong) {
+        toggleLikeSong(currentSong.id);
+      } else if (currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex]) {
+        toggleLikeSong(currentPlaylist[currentTrackIndex].id);
+      }
+    });
+  }
 
   // ==========================================================================
   // BUTTONS & CONTROLS EVENT WIRING
@@ -1675,12 +1759,62 @@
     }
   });
 
-  // Mobile Bottom Nav Switching
+  // Bottom Sheet Helpers
+  function openDevicePickerSheet() {
+    if (devicePickerSheet) devicePickerSheet.classList.remove('hidden');
+  }
+
+  function closeDevicePickerSheet() {
+    if (devicePickerSheet) devicePickerSheet.classList.add('hidden');
+  }
+
+  function openPremiumSheet() {
+    if (premiumSheet) premiumSheet.classList.remove('hidden');
+  }
+
+  function closePremiumSheet() {
+    if (premiumSheet) premiumSheet.classList.add('hidden');
+  }
+
+  function openCreateSheet() {
+    if (createSheet) createSheet.classList.remove('hidden');
+  }
+
+  function closeCreateSheet() {
+    if (createSheet) createSheet.classList.add('hidden');
+  }
+
+  function openTrackContextSheet(song) {
+    if (!trackContextSheet || !song) return;
+    currentContextSong = song;
+    if (contextTrackCover) contextTrackCover.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100';
+    if (contextTrackTitle) contextTrackTitle.textContent = song.title;
+    if (contextTrackArtist) contextTrackArtist.textContent = song.artist;
+    if (btnContextLikeText) {
+      btnContextLikeText.textContent = song.is_liked ? 'Remove from Liked Songs' : 'Add to Liked Songs';
+    }
+    trackContextSheet.classList.remove('hidden');
+  }
+
+  function closeTrackContextSheet() {
+    if (trackContextSheet) trackContextSheet.classList.add('hidden');
+    currentContextSong = null;
+  }
+
+  // Mobile Bottom Nav Switching (5 Items matching Spotify)
   document.querySelectorAll('.mobile-nav-item').forEach(item => {
     item.addEventListener('click', () => {
+      const route = item.getAttribute('data-route');
+      if (route === 'premium') {
+        openPremiumSheet();
+        return;
+      }
+      if (route === 'create') {
+        openCreateSheet();
+        return;
+      }
       document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
-      const route = item.getAttribute('data-route');
       if (route === 'home') document.getElementById('btnNavHome').click();
       else if (route === 'search') document.getElementById('btnNavSearch').click();
       else if (route === 'library') document.getElementById('btnNavLibrary').click();
@@ -1698,12 +1832,116 @@
   // Floating Mini Player Click: Open Fullscreen Modal on Mobile
   if (spotifyPlayerBar) {
     spotifyPlayerBar.addEventListener('click', (e) => {
-      if (e.target.closest('#barHeartBtn') || e.target.closest('#mobileMiniPlayBtn') || e.target.closest('.player-center') || e.target.closest('.player-right')) {
+      if (e.target.closest('#barHeartBtn') || 
+          e.target.closest('#mobileMiniPlayBtn') || 
+          e.target.closest('#mobileConnectBtn') || 
+          e.target.closest('#mobileAddBtn') || 
+          e.target.closest('#mobileDeviceBadge') || 
+          e.target.closest('.player-center') || 
+          e.target.closest('.player-right')) {
         return;
       }
       if (window.innerWidth <= 768 && btnFullscreen) {
         btnFullscreen.click();
       }
+    });
+  }
+
+  // Mobile Device Picker Wiring
+  if (mobileConnectBtn) {
+    mobileConnectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDevicePickerSheet();
+    });
+  }
+  if (mobileDeviceBadge) {
+    mobileDeviceBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDevicePickerSheet();
+    });
+  }
+  if (btnCloseDeviceSheet) btnCloseDeviceSheet.addEventListener('click', closeDevicePickerSheet);
+  if (deviceSheetBackdrop) deviceSheetBackdrop.addEventListener('click', closeDevicePickerSheet);
+
+  if (deviceListGroup) {
+    deviceListGroup.querySelectorAll('.device-item').forEach(item => {
+      item.addEventListener('click', () => {
+        deviceListGroup.querySelectorAll('.device-item').forEach(d => {
+          d.classList.remove('active');
+          const chk = d.querySelector('.device-check');
+          if (chk) chk.classList.add('hidden');
+        });
+        item.classList.add('active');
+        const chk = item.querySelector('.device-check');
+        if (chk) chk.classList.remove('hidden');
+
+        const devName = item.getAttribute('data-device');
+        if (mobileDeviceName) mobileDeviceName.textContent = devName;
+        closeDevicePickerSheet();
+        showToast(`Connected to ${devName}`);
+      });
+    });
+  }
+
+  // Premium Sheet Wiring
+  if (btnClosePremiumSheet) btnClosePremiumSheet.addEventListener('click', closePremiumSheet);
+  if (premiumSheetBackdrop) premiumSheetBackdrop.addEventListener('click', closePremiumSheet);
+  if (btnGetPremium) {
+    btnGetPremium.addEventListener('click', () => {
+      closePremiumSheet();
+      showToast('🎉 Spotkify Premium Individual Activated! High-fidelity master streaming enabled.');
+    });
+  }
+
+  // Create Sheet Wiring
+  if (btnCloseCreateSheet) btnCloseCreateSheet.addEventListener('click', closeCreateSheet);
+  if (createSheetBackdrop) createSheetBackdrop.addEventListener('click', closeCreateSheet);
+  if (btnCreateNewPlaylist) {
+    btnCreateNewPlaylist.addEventListener('click', () => {
+      closeCreateSheet();
+      const pName = prompt('Enter playlist name:', 'My Playlist #1') || 'My Playlist #1';
+      openPlaylistView(pName, `Created by sharu • 0 songs`, 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', []);
+      showToast(`Created playlist "${pName}"`);
+    });
+  }
+  if (btnCreateBlend) {
+    btnCreateBlend.addEventListener('click', () => {
+      closeCreateSheet();
+      showToast('Blend invitation link copied to clipboard!');
+    });
+  }
+
+  // Track Context Sheet Wiring
+  if (contextSheetBackdrop) contextSheetBackdrop.addEventListener('click', closeTrackContextSheet);
+  if (btnContextLike) {
+    btnContextLike.addEventListener('click', async () => {
+      if (currentContextSong) {
+        await toggleLikeSong(currentContextSong.id);
+        closeTrackContextSheet();
+      }
+    });
+  }
+  if (btnContextAddToPlaylist) {
+    btnContextAddToPlaylist.addEventListener('click', () => {
+      if (currentContextSong) {
+        showToast(`Added "${currentContextSong.title}" to Your Library`);
+      }
+      closeTrackContextSheet();
+    });
+  }
+  if (btnContextViewArtist) {
+    btnContextViewArtist.addEventListener('click', () => {
+      if (currentContextSong) {
+        const first = currentContextSong.artist ? currentContextSong.artist.split(',')[0].trim() : '';
+        closeTrackContextSheet();
+        if (first) openArtistView(first);
+      }
+    });
+  }
+  if (btnContextShare) {
+    btnContextShare.addEventListener('click', () => {
+      closeTrackContextSheet();
+      showToast('Track link copied to clipboard!');
     });
   }
 

@@ -533,7 +533,7 @@
   <footer class="spotify-player-bar" id="spotifyPlayerBar">
     <!-- Mobile Mini-Player Context Header (visible on mobile above track info) -->
     <div class="mobile-player-top-label" id="mobilePlayerTopLabel">
-      <span>Similar to the album you chose</span>
+      <span id="mobilePlayerTopText">Similar to the album you chose</span>
     </div>
 
     <!-- Left Track Section -->
@@ -547,16 +547,29 @@
       <div class="player-names">
         <span class="bar-title" id="barTitle">Select a track</span>
         <span class="bar-artist" id="barArtist">Cloudinary Streaming</span>
-        <!-- Mobile Device Badge (Green headphone icon + device name) -->
-        <div class="mobile-device-badge">
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12v6a3 3 0 0 0 3 3h2v-8H4v-1c0-4.41 3.59-8 8-8s8 3.59 8 8v1h-3v8h2a3 3 0 0 0 3-3v-6c0-5.52-4.48-10-10-10z"/></svg>
-          <span id="mobileDeviceName">Spotkify Web</span>
+        <!-- Mobile Device Badge (Green Bluetooth icon + device name) -->
+        <div class="mobile-device-badge" id="mobileDeviceBadge" title="Connected device">
+          <svg class="device-bt-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline>
+          </svg>
+          <span id="mobileDeviceName">realme Buds Air8</span>
         </div>
       </div>
       <div class="mobile-player-actions">
-        <button class="player-heart-btn" id="barHeartBtn" title="Save to Your Library">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        <button class="mobile-connect-btn" id="mobileConnectBtn" title="Connect to a device">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1ed760" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+          </svg>
+        </button>
+        <button class="mobile-add-btn" id="mobileAddBtn" title="Add to Playlist">
+          <svg id="mobileAddSvgPlus" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <svg id="mobileAddSvgCheck" class="hidden" viewBox="0 0 24 24" width="24" height="24" fill="#1ed760">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
           </svg>
         </button>
         <button class="mobile-mini-play-btn" id="mobileMiniPlayBtn" title="Play / Pause">
@@ -632,21 +645,182 @@
   </footer>
   </div> <!-- Close spotify-app -->
 
-  <!-- MOBILE BOTTOM NAVIGATION (Matches Spotify Mobile App) -->
+  <!-- MOBILE BOTTOM NAVIGATION (Matches Spotify Mobile App 1:1) -->
   <nav class="mobile-bottom-nav">
-    <button class="mobile-nav-item active" data-route="home">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33z"/></svg>
+    <button class="mobile-nav-item active" data-route="home" id="mNavHome">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33z"/>
+      </svg>
       <span>Home</span>
     </button>
-    <button class="mobile-nav-item" data-route="search">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3z"/></svg>
+    <button class="mobile-nav-item" data-route="search" id="mNavSearch">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M10.57 3a7.5 7.5 0 1 0 4.7 13.342l4.98 4.981a1 1 0 0 0 1.414-1.415l-4.98-4.98A7.5 7.5 0 0 0 10.57 3zm-5.5 7.5a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"/>
+      </svg>
       <span>Search</span>
     </button>
-    <button class="mobile-nav-item" data-route="library">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1.5-.866z"/></svg>
+    <button class="mobile-nav-item" data-route="library" id="mNavLibrary">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M3 22a1 1 0 0 1-1-1V3a1 1 0 0 1 2 0v18a1 1 0 0 1-1 1zM15.5 2.134A1 1 0 0 0 14 3v18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1.5-.866zM16 20V4l4 2.31V20zM8.5 2.134A1 1 0 0 0 7 3v18a1 1 0 0 0 1.5.866l5-2.887V4.02zM9 18.27V4.73l3 1.73v10.08z"/>
+      </svg>
       <span>Your Library</span>
     </button>
+    <button class="mobile-nav-item" data-route="premium" id="mNavPremium">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.434-5.308-1.758-8.793-.963-.335.077-.67-.133-.746-.469-.077-.334.132-.67.467-.746 3.808-.87 7.076-.496 9.721 1.115.295.18.388.563.208.856zm1.223-2.72c-.226.367-.711.482-1.077.256-2.69-1.653-6.79-2.131-9.97-1.165-.413.125-.85-.107-.975-.521-.125-.414.108-.85.521-.975 3.635-1.103 8.163-.568 11.245 1.328.366.226.482.71.256 1.077zm.106-2.828C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.02-.132-1.17-.626-.15-.493.132-1.02.626-1.17 3.535-1.072 9.404-.865 13.115 1.338.445.264.59.41.326 1.285-.264.444-.84.59-1.285.326z"/>
+      </svg>
+      <span>Premium</span>
+    </button>
+    <button class="mobile-nav-item" data-route="create" id="mNavCreate">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span>Create</span>
+    </button>
   </nav>
+
+  <!-- DEVICE PICKER BOTTOM SHEET -->
+  <div class="mobile-bottom-sheet hidden" id="devicePickerSheet">
+    <div class="sheet-backdrop" id="deviceSheetBackdrop"></div>
+    <div class="sheet-content">
+      <div class="sheet-handle-bar"></div>
+      <div class="sheet-header">
+        <div class="sheet-title-group">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#1ed760"><path d="M12 2C6.48 2 2 6.48 2 12v6a3 3 0 0 0 3 3h2v-8H4v-1c0-4.41 3.59-8 8-8s8 3.59 8 8v1h-3v8h2a3 3 0 0 0 3-3v-6c0-5.52-4.48-10-10-10z"/></svg>
+          <h3>Connect to a device</h3>
+        </div>
+        <button class="sheet-close-btn" id="btnCloseDeviceSheet">✕</button>
+      </div>
+      <div class="sheet-body">
+        <p class="device-sheet-intro">Select audio output device for high-definition streaming:</p>
+        <div class="device-list" id="deviceListGroup">
+          <div class="device-item active" data-device="realme Buds Air8">
+            <div class="device-item-left">
+              <svg class="device-item-icon green" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+              <div class="device-item-meta">
+                <span class="device-name">realme Buds Air8</span>
+                <span class="device-status green">Connected • Bluetooth LDAC</span>
+              </div>
+            </div>
+            <div class="device-check">✓</div>
+          </div>
+          <div class="device-item" data-device="Spotkify Web Player">
+            <div class="device-item-left">
+              <svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 6h16v10H4zM2 4v14h20V4H2zm0 16h20v2H2z"/></svg>
+              <div class="device-item-meta">
+                <span class="device-name">Spotkify Web Player</span>
+                <span class="device-status">This device (Internal speakers)</span>
+              </div>
+            </div>
+            <div class="device-check hidden">✓</div>
+          </div>
+          <div class="device-item" data-device="Living Room TV">
+            <div class="device-item-left">
+              <svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+              <div class="device-item-meta">
+                <span class="device-name">Living Room TV</span>
+                <span class="device-status">Spotify Connect • Google Cast</span>
+              </div>
+            </div>
+            <div class="device-check hidden">✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPOTKIFY PREMIUM MODAL -->
+  <div class="mobile-bottom-sheet hidden" id="premiumSheet">
+    <div class="sheet-backdrop" id="premiumSheetBackdrop"></div>
+    <div class="sheet-content premium-sheet-content">
+      <div class="sheet-handle-bar"></div>
+      <div class="premium-hero-card">
+        <div class="premium-badge">SPOTKIFY PREMIUM</div>
+        <h2 class="premium-hero-title">Experience music without limits</h2>
+        <p class="premium-hero-sub">Unlimited skips • High fidelity Cloudinary master audio • Zero audio interruptions</p>
+      </div>
+      <div class="premium-plan-card">
+        <div class="plan-head">
+          <span class="plan-name">Individual</span>
+          <span class="plan-price">Free for 1 month</span>
+        </div>
+        <p class="plan-desc">₹119 / month after • Cancel anytime</p>
+        <button class="btn-premium-action" id="btnGetPremium">Get 1 Month Free</button>
+      </div>
+      <div class="premium-features-row">
+        <div class="pf-item">✓ Ad-free music listening</div>
+        <div class="pf-item">✓ High-bitrate master streaming</div>
+        <div class="pf-item">✓ Listen with friends in real time</div>
+      </div>
+      <button class="sheet-cancel-btn" id="btnClosePremiumSheet">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- CREATE PLAYLIST BOTTOM SHEET -->
+  <div class="mobile-bottom-sheet hidden" id="createSheet">
+    <div class="sheet-backdrop" id="createSheetBackdrop"></div>
+    <div class="sheet-content">
+      <div class="sheet-handle-bar"></div>
+      <div class="sheet-header">
+        <h3>Create</h3>
+        <button class="sheet-close-btn" id="btnCloseCreateSheet">✕</button>
+      </div>
+      <div class="create-options-list">
+        <div class="create-option-item" id="btnCreateNewPlaylist">
+          <div class="create-icon-box">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          </div>
+          <div class="create-meta">
+            <span class="create-title">Playlist</span>
+            <span class="create-desc">Build a playlist with songs from your library</span>
+          </div>
+        </div>
+        <div class="create-option-item" id="btnCreateBlend">
+          <div class="create-icon-box">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+          <div class="create-meta">
+            <span class="create-title">Blend</span>
+            <span class="create-desc">Combine tastes in a playlist made for you and friends</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACK CONTEXT OPTIONS BOTTOM SHEET -->
+  <div class="mobile-bottom-sheet hidden" id="trackContextSheet">
+    <div class="sheet-backdrop" id="contextSheetBackdrop"></div>
+    <div class="sheet-content">
+      <div class="sheet-handle-bar"></div>
+      <div class="track-context-header">
+        <img id="contextTrackCover" src="" alt="Cover" class="context-cover-img">
+        <div class="context-track-meta">
+          <span class="context-track-title" id="contextTrackTitle">Track Title</span>
+          <span class="context-track-artist" id="contextTrackArtist">Artist</span>
+        </div>
+      </div>
+      <div class="context-menu-list">
+        <button class="context-item" id="btnContextLike">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span id="btnContextLikeText">Add to Liked Songs</span>
+        </button>
+        <button class="context-item" id="btnContextAddToPlaylist">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+          <span>Add to playlist</span>
+        </button>
+        <button class="context-item" id="btnContextViewArtist">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>View artist</span>
+        </button>
+        <button class="context-item" id="btnContextShare">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+          <span>Share</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- FULLSCREEN IMMERSIVE PLAYER MODAL -->
   <div class="fullscreen-player-modal hidden" id="fullscreenModal">
