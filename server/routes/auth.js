@@ -15,44 +15,23 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Username and password required' } });
   }
 
-  let user = db.prepare('SELECT * FROM user WHERE LOWER(user_name) = LOWER(?)').get(cleanUsername);
-
-  if (!user) {
-    // Automatically create user on first login so they are never rejected or locked out
-    try {
-      const salt = bcrypt.genSaltSync(10);
-      const hashedPassword = bcrypt.hashSync(cleanPassword, salt);
-      const userId = 'user-' + Date.now();
-      const displayName = cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1);
-      const email = `${cleanUsername.toLowerCase()}@spotkify.local`;
-      
-      db.prepare(`
-        INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).run(userId, cleanUsername, displayName, email, hashedPassword);
-
-      user = db.prepare('SELECT * FROM user WHERE id = ?').get(userId);
-    } catch (createErr) {
-      console.warn('[AUTH] Auto-register note:', createErr.message);
-    }
-  } else {
-    // If user exists, verify password or update password if non-admin to prevent lockouts
-    const valid = bcrypt.compareSync(cleanPassword, user.password);
-    if (!valid) {
-      if (user.user_name.toLowerCase() === 'admin' && cleanPassword !== 'admin123' && cleanPassword !== 'admin') {
-        return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid username or password' } });
-      }
-      // For standard users, update password so credentials match their input
-      try {
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(cleanPassword, salt);
-        db.prepare('UPDATE user SET password = ? WHERE id = ?').run(hashedPassword, user.id);
-      } catch (pwErr) {}
-    }
+  // Only sharu as username and sharu@123 as password is valid
+  if (cleanUsername.toLowerCase() !== 'sharu' || cleanPassword !== 'sharu@123') {
+    return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect username or password. Please try again.' } });
   }
 
+  let user = db.prepare('SELECT * FROM user WHERE LOWER(user_name) = LOWER(?)').get('sharu');
+
   if (!user) {
-    return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid username or password' } });
+    try {
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync('sharu@123', salt);
+      db.prepare(`
+        INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
+        VALUES ('sharu-user-id', 'sharu', 'Sharu', 'sharu@spotkify.local', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(hashedPassword);
+      user = db.prepare('SELECT * FROM user WHERE user_name = ?').get('sharu');
+    } catch (e) {}
   }
 
   try {
@@ -62,6 +41,7 @@ router.post('/login', (req, res) => {
       db.prepare('UPDATE user SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
     } catch (e) {}
   }
+
   const token = generateToken(user);
 
   res.json({

@@ -1996,7 +1996,9 @@
   const btnLogout = document.getElementById('btnLogout');
 
   function isAuthenticated() {
-    return localStorage.getItem('spotkify_auth') === 'true' || sessionStorage.getItem('spotkify_auth') === 'true';
+    const isAuth = localStorage.getItem('spotkify_auth') === 'true' || sessionStorage.getItem('spotkify_auth') === 'true';
+    const user = (localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || '').toLowerCase();
+    return isAuth && user === 'sharu';
   }
 
   function getLoggedInUser() {
@@ -2087,10 +2089,13 @@
         return;
       }
 
-      // Check credentials (sharu / sharu@123, admin / admin123, or any input)
-      const isSharu = (enteredUser.toLowerCase() === 'sharu' && (enteredPass === 'sharu@123' || enteredPass === 'sharu'));
-      const isAdmin = (enteredUser.toLowerCase() === 'admin' && (enteredPass === 'admin123' || enteredPass === 'admin'));
-      const authenticatedUsername = isSharu ? 'sharu' : (isAdmin ? 'admin' : enteredUser);
+      // ONLY sharu as username and sharu@123 as password is allowed to login!
+      if (enteredUser.toLowerCase() !== 'sharu' || enteredPass !== 'sharu@123') {
+        showLoginError('Incorrect username or password. Please try again.');
+        return;
+      }
+
+      const authenticatedUsername = 'sharu';
 
       // Immediately unlock the application
       if (loginAlertBox) loginAlertBox.classList.add('hidden');
@@ -2105,14 +2110,14 @@
       const remember = chkRememberMe ? chkRememberMe.checked : true;
       if (remember) {
         localStorage.setItem('spotkify_auth', 'true');
-        localStorage.setItem('spotkify_user', authenticatedUsername);
+        localStorage.setItem('spotkify_user', 'sharu');
       } else {
         sessionStorage.setItem('spotkify_auth', 'true');
-        sessionStorage.setItem('spotkify_user', authenticatedUsername);
+        sessionStorage.setItem('spotkify_user', 'sharu');
       }
 
-      updateUserProfileDisplay(authenticatedUsername);
-      showToast(`Welcome to Spotkify, ${authenticatedUsername}!`);
+      updateUserProfileDisplay('sharu');
+      showToast('Welcome to Spotkify, sharu!');
       initAppData();
 
       // Sync with API in the background to store JWT token
