@@ -8,49 +8,60 @@ const router = express.Router();
 // Login
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
-  const cleanUsername = (username || '').trim();
+  const cleanUsername = (username || '').trim().toLowerCase();
   const cleanPassword = (password || '').trim();
 
-  if (!cleanUsername || !cleanPassword) {
-    return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Username and password required' } });
+  // Strictly enforce credentials: username must be 'sharu' and password must be 'sharu@123' (or 'Sharu@123' for mobile keyboards)
+  const isUserMatch = cleanUsername === 'sharu';
+  const isPassMatch = cleanPassword === 'sharu@123' || cleanPassword === 'Sharu@123';
+
+  if (!isUserMatch || !isPassMatch) {
+    return res.status(401).json({
+      error: {
+        code: 'INVALID_CREDENTIALS',
+        message: 'Incorrect username or password. Please try again.'
+      }
+    });
   }
 
-  // Only sharu as username and sharu@123 as password is valid
-  if (cleanUsername.toLowerCase() !== 'sharu' || cleanPassword !== 'sharu@123') {
-    return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect username or password. Please try again.' } });
-  }
-
-  let user = db.prepare('SELECT * FROM user WHERE LOWER(user_name) = LOWER(?)').get('sharu');
-
+  // Ensure 'sharu' user exists in database
+  let user = db.prepare('SELECT * FROM user WHERE LOWER(user_name) = ?').get('sharu');
   if (!user) {
     try {
       const salt = bcrypt.genSaltSync(10);
       const hashedPassword = bcrypt.hashSync('sharu@123', salt);
+      const newId = `user-sharu`;
       db.prepare(`
         INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
-        VALUES ('sharu-user-id', 'sharu', 'Sharu', 'sharu@spotkify.local', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `).run(hashedPassword);
-      user = db.prepare('SELECT * FROM user WHERE user_name = ?').get('sharu');
-    } catch (e) {}
+        VALUES (?, 'sharu', 'Sharu', 'sharu@spotkify.local', ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(newId, hashedPassword);
+      user = db.prepare('SELECT * FROM user WHERE id = ?').get(newId);
+    } catch (e) {
+      user = db.prepare('SELECT * FROM user LIMIT 1').get();
+    }
+  } else {
+    try {
+      if (!user.password || !bcrypt.compareSync('sharu@123', user.password)) {
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = bcrypt.hashSync('sharu@123', salt);
+        db.prepare('UPDATE user SET password = ? WHERE id = ?').run(hashedPassword, user.id);
+      }
+    } catch (err) {}
   }
 
   try {
     db.prepare('UPDATE user SET updated_at = CURRENT_TIMESTAMP, last_login_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-  } catch (err) {
-    try {
-      db.prepare('UPDATE user SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-    } catch (e) {}
-  }
+  } catch (err) {}
 
   const token = generateToken(user);
 
-  res.json({
+  return res.json({
     data: {
       token,
       user: {
         id: user.id,
         userName: user.user_name,
-        name: user.name || user.user_name,
+        name: user.name || 'Sharu',
         email: user.email,
         isAdmin: Boolean(user.is_admin)
       }

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="driveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141E30" />
+      <stop offset="50%" stop-color="#243B55" />
+      <stop offset="100%" stop-color="#fd746c" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#driveGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(255, 255, 255, 0.12)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="2"/>
+  <!-- Car & Road icon -->
+  <path d="M125 125 L132 108 C134 104 138 101 142 101 L158 101 C162 101 166 104 168 108 L175 125 L178 125 C182 125 185 128 185 132 L185 142 C185 145 182 148 178 148 L178 152 C178 154 176 156 174 156 L168 156 C166 156 164 154 164 152 L164 148 L136 148 L136 152 C136 154 134 156 132 156 L126 156 C124 156 122 154 122 152 L122 148 C118 148 115 145 115 142 L115 132 C115 128 118 125 122 125 Z M133 123 L167 123 L162 110 L138 110 Z" fill="#ffffff" opacity="0.95"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#fd746c" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#ffffff">Long Drive Tamil</text>
+</svg>

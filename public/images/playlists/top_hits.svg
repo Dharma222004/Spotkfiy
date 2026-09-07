@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="topHitsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00c6ff" />
+      <stop offset="50%" stop-color="#0072ff" />
+      <stop offset="100%" stop-color="#7928ca" />
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e0f7fa" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#topHitsGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(255, 255, 255, 0.12)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="2"/>
+  <path d="M150 78 L160 102 L186 104 L166 122 L172 148 L150 134 L128 148 L134 122 L114 104 L140 102 Z" fill="#ffffff" opacity="0.95"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#00c6ff" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="url(#textGrad)">Top Hits</text>
+</svg>

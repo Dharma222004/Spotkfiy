@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="trendNowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0575e6" />
+      <stop offset="50%" stop-color="#00f260" />
+      <stop offset="100%" stop-color="#0575e6" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#trendNowGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(0, 0, 0, 0.2)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="2"/>
+  <!-- Trending Arrow Icon -->
+  <path d="M125 130 L140 115 L152 127 L170 102" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <polyline points="158,102 170,102 170,114" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#00f260" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Trending Now Tamil</text>
+</svg>

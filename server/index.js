@@ -20,10 +20,27 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 4534;
 
+// Disable etags and caching for dynamic API responses to guarantee reliable JSON payloads
+app.set('etag', false);
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+}));
 
 // Structured Logger
 app.use((req, res, next) => {
@@ -93,10 +110,11 @@ app.use((err, req, res, next) => {
   });
 });
 
+const HOST = process.env.HOST || '0.0.0.0';
 let server = null;
 if (require.main === module && !process.env.VERCEL) {
-  server = app.listen(PORT, () => {
-    console.log(`[Server] Spotkify API server listening on http://localhost:${PORT}`);
+  server = app.listen(PORT, HOST, () => {
+    console.log(`[Server] Spotkify API server listening on http://${HOST}:${PORT} (and http://localhost:${PORT})`);
   });
 }
 

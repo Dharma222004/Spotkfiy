@@ -36,10 +36,11 @@ router.get('/', async (req, res) => {
   await ensureFreshCatalog();
 
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 50));
+  const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 50));
   const offset = (page - 1) * limit;
   const genre = req.query.genre;
   const language = req.query.language;
+  const folder = req.query.folder;
   const artist = req.query.artist;
   const artistId = req.query.artistId;
   const albumId = req.query.albumId;
@@ -48,6 +49,12 @@ router.get('/', async (req, res) => {
   let whereClauses = ['(m.is_active = 1 OR m.is_active IS NULL)'];
   let countParams = [];
   let selectParams = [userId];
+
+  if (folder) {
+    whereClauses.push('LOWER(m.folder) = LOWER(?)');
+    countParams.push(folder);
+    selectParams.push(folder);
+  }
 
   if (genre) {
     whereClauses.push('LOWER(m.genre) = LOWER(?)');

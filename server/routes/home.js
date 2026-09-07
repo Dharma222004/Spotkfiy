@@ -80,7 +80,20 @@ router.get('/', async (req, res) => {
 
   const tamilHits = tamilHitsRaw.map(formatSongRow);
 
-  // 4. Popular Artists (Dynamically derived from media_file_artists)
+  // 4. New Additions
+  const newAdditionsRaw = db.prepare(`
+    SELECT m.id, m.title, m.artist, m.artists_json, m.album, m.movie, m.duration, m.cover_image_url,
+      m.audio_url, m.cloudinary_public_id, m.genre, m.language,
+      EXISTS(SELECT 1 FROM annotation a WHERE a.user_id = ? AND a.item_id = m.id AND a.starred = 1) AS is_liked
+    FROM media_file m
+    WHERE m.is_active = 1 OR m.is_active IS NULL
+    ORDER BY m.created_at DESC
+    LIMIT 10
+  `).all(userId);
+
+  const newAdditions = newAdditionsRaw.map(formatSongRow);
+
+  // 5. Popular Artists (Dynamically derived from media_file_artists)
   const popularArtists = db.prepare(`
     SELECT a.id, a.name, a.slug, a.large_image_url,
       COUNT(mfa.media_file_id) AS song_count
@@ -88,10 +101,10 @@ router.get('/', async (req, res) => {
     JOIN media_file_artists mfa ON a.id = mfa.artist_id
     GROUP BY a.id
     ORDER BY song_count DESC, a.name ASC
-    LIMIT 10
+    LIMIT 24
   `).all();
 
-  // 5. Popular Albums
+  // 6. Popular Albums
   const popularAlbums = db.prepare(`
     SELECT alb.id, alb.name, alb.album_artist, alb.large_image_url, alb.genre,
       COUNT(m.id) AS song_count
@@ -102,13 +115,23 @@ router.get('/', async (req, res) => {
     LIMIT 8
   `).all();
 
+  // 7. Featured Folder Playlists
+  const featuredPlaylists = db.prepare(`
+    SELECT id, name, comment, duration, song_count, uploaded_image
+    FROM playlist
+    WHERE public = 1
+    ORDER BY song_count DESC
+  `).all();
+
   res.json({
     data: {
       quickPicks,
       trending,
       tamilHits,
+      newAdditions,
       popularArtists,
-      popularAlbums
+      popularAlbums,
+      featuredPlaylists
     }
   });
 });

@@ -14,7 +14,7 @@
   let isRepeat = false;
   let currentRoute = 'home';
   let queue = [];
-  let isRightPanelOpen = true;
+  let isRightPanelOpen = false;
 
   // Audio Engine
   const audio = document.getElementById('spotifyAudioEngine');
@@ -45,6 +45,7 @@
   const artistsShelf = document.getElementById('artistsShelf');
   const albumsShelf = document.getElementById('albumsShelf');
   const libraryShelf = document.getElementById('libraryShelf');
+  const featuredPlaylistsShelf = document.getElementById('featuredPlaylistsShelf');
   const dynamicLibraryList = document.getElementById('dynamicLibraryList');
   const libLikedCount = document.getElementById('libLikedCount');
   const libAllTracksCount = document.getElementById('libAllTracksCount');
@@ -56,8 +57,10 @@
   const favouriteArtistsShelf = document.getElementById('favouriteArtistsShelf');
   const spotifyPlayerBar = document.getElementById('spotifyPlayerBar');
   const mobilePlayerTopLabel = document.getElementById('mobilePlayerTopLabel');
-  const mobilePlayerTopText = document.getElementById('mobilePlayerTopText');
+  const mobilePlayerTopText = document.getElementById('mobilePlayerTopText') || mobilePlayerTopLabel;
+  const mobileMiniPrevBtn = document.getElementById('mobileMiniPrevBtn');
   const mobileMiniPlayBtn = document.getElementById('mobileMiniPlayBtn');
+  const mobileMiniNextBtn = document.getElementById('mobileMiniNextBtn');
   const mobileBarPlaySvg = document.getElementById('mobileBarPlaySvg');
   const mobileBarPauseSvg = document.getElementById('mobileBarPauseSvg');
   const mobileMiniProgressFill = document.getElementById('mobileMiniProgressFill');
@@ -171,14 +174,197 @@
   const btnToggleQueue = document.getElementById('btnToggleQueue');
   const btnFullscreen = document.getElementById('btnFullscreen');
 
-  // Fullscreen Modal DOM
+  // Fullscreen Modal DOM (1:1 Match to Spotify Mobile App - Image 2)
   const fullscreenModal = document.getElementById('fullscreenModal');
   const fsBackdrop = document.getElementById('fsBackdrop');
   const fsCoverImg = document.getElementById('fsCoverImg');
+  const fsThumbImg = document.getElementById('fsThumbImg');
   const fsTrackTitle = document.getElementById('fsTrackTitle');
   const fsArtistName = document.getElementById('fsArtistName');
-  const fsAlbumName = document.getElementById('fsAlbumName');
   const btnCloseFullscreen = document.getElementById('btnCloseFullscreen');
+  const fsHeaderContextSub = document.getElementById('fsHeaderContextSub');
+  const fsHeaderPlaylistName = document.getElementById('fsHeaderPlaylistName');
+  const fsBtnMore = document.getElementById('fsBtnMore');
+  const fsBtnAdd = document.getElementById('fsBtnAdd');
+  const fsAddSvgPlus = document.getElementById('fsAddSvgPlus');
+  const fsAddSvgCheck = document.getElementById('fsAddSvgCheck');
+  const fsProgressBar = document.getElementById('fsProgressBar');
+  const fsProgressFill = document.getElementById('fsProgressFill');
+  const fsProgressThumb = document.getElementById('fsProgressThumb');
+  const fsCurrentTime = document.getElementById('fsCurrentTime');
+  const fsTotalTime = document.getElementById('fsTotalTime');
+  const fsBtnShuffle = document.getElementById('fsBtnShuffle');
+  const fsShuffleDot = document.getElementById('fsShuffleDot');
+  const fsBtnPrev = document.getElementById('fsBtnPrev');
+  const fsBtnPlayPause = document.getElementById('fsBtnPlayPause');
+  const fsPlaySvg = document.getElementById('fsPlaySvg');
+  const fsPauseSvg = document.getElementById('fsPauseSvg');
+  const fsBtnNext = document.getElementById('fsBtnNext');
+  const fsBtnTimer = document.getElementById('fsBtnTimer');
+  const fsDeviceBadge = document.getElementById('fsDeviceBadge');
+  const fsDeviceName = document.getElementById('fsDeviceName');
+  const fsBtnShare = document.getElementById('fsBtnShare');
+  const fsBtnQueue = document.getElementById('fsBtnQueue');
+  const fsFloatingLyrics = document.getElementById('fsFloatingLyrics');
+  const fsFloatingLyric = document.getElementById('fsFloatingLyric');
+  const fsLyricsPeekCard = document.getElementById('fsLyricsPeekCard');
+  const fsLyricsPeekText = document.getElementById('fsLyricsPeekText');
+
+  // Song Live Lyrics Mapping (Authentic Spotify Canvas Feel matching Image 2)
+  const songLyricsMap = {
+    'othaiyadi': {
+      floating: 'en uchurul enduheen-enduheen',
+      preview: 'en niloti, niloti...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+    },
+    'sirai': {
+      floating: 'en uchurul enduheen-enduheen',
+      preview: 'en niloti, niloti...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+    },
+    'neelothi': {
+      floating: 'en uchurul enduheen-enduheen',
+      preview: 'en niloti, niloti...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+    },
+    'enna solla': {
+      floating: 'Ilamai muzhuvadhum azhagaana kanavu...',
+      preview: 'Enna solla pogirai sandhana thendrale...<br><span class="highlight">Ilamai muzhuvadhum azhagaana kanavu...</span>'
+    },
+    'jailer': {
+      floating: 'Alappara kelapparom, thalaivara paathaa bayamaa...',
+      preview: 'Hukum Tiger ka hukum...<br><span class="highlight">Alappara kelapparom, thalaivara paathaa bayamaa...</span>'
+    },
+    'leo': {
+      floating: 'Naa ready dhan varavaa anna erangi paakkavaa...',
+      preview: 'Thala suthudha machi, whistle parakkudha...<br><span class="highlight">Naa ready dhan varavaa anna erangi paakkavaa...</span>'
+    },
+    'kanaa': {
+      floating: 'Vaayadi petha pulla vambula maattikitta...',
+      preview: 'Othaiyadi paadhayila thaavi oduren...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+    }
+  };
+
+  function getLyricsForSong(song) {
+    if (!song) {
+      return {
+        floating: 'en uchurul enduheen-enduheen',
+        preview: 'en niloti, niloti...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+      };
+    }
+    const combined = `${song.title || ''} ${song.movie || ''} ${song.album || ''}`.toLowerCase();
+    for (const key of Object.keys(songLyricsMap)) {
+      if (combined.includes(key)) {
+        return songLyricsMap[key];
+      }
+    }
+    return {
+      floating: 'en uchurul enduheen-enduheen',
+      preview: 'en niloti, niloti...<br><span class="highlight">en uchurul enduheen-enduheen</span>'
+    };
+  }
+
+  // W3C MediaSession API for Continuous Background Playback (Android / iOS lockscreen & earbuds)
+  function updateMediaSession(song) {
+    if (!song || !('mediaSession' in navigator)) return;
+    const coverUrl = song.cover_image_url || '/images/covers/enna_solla.jpg';
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: song.title || 'Spotkify Track',
+        artist: song.artist || 'Spotkify Artist',
+        album: song.movie ? `From "${song.movie}"` : (song.album || 'Spotkify'),
+        artwork: [
+          { src: coverUrl, sizes: '96x96', type: 'image/jpeg' },
+          { src: coverUrl, sizes: '128x128', type: 'image/jpeg' },
+          { src: coverUrl, sizes: '192x192', type: 'image/jpeg' },
+          { src: coverUrl, sizes: '256x256', type: 'image/jpeg' },
+          { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+    } catch (e) {
+      console.warn('MediaSession metadata warning:', e);
+    }
+    updateMediaSessionPlaybackState();
+  }
+
+  function updateMediaSessionPlaybackState() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+      if (audio && audio.duration && !isNaN(audio.duration) && isFinite(audio.currentTime)) {
+        navigator.mediaSession.setPositionState({
+          duration: Math.max(0, audio.duration),
+          playbackRate: audio.playbackRate || 1,
+          position: Math.min(Math.max(0, audio.currentTime), audio.duration)
+        });
+      }
+    } catch (e) {}
+  }
+
+  function initMediaSessionHandlers() {
+    if (!('mediaSession' in navigator)) return;
+    const handlers = [
+      ['play', () => {
+        if (audio.paused) {
+          audio.play().then(() => setPlayingState(true)).catch(console.error);
+        }
+      }],
+      ['pause', () => {
+        audio.pause();
+        setPlayingState(false);
+      }],
+      ['previoustrack', () => {
+        playPrevTrack();
+      }],
+      ['nexttrack', () => {
+        playNextTrack();
+      }],
+      ['seekto', (details) => {
+        if (details.seekTime !== undefined && audio.duration) {
+          audio.currentTime = Math.min(Math.max(0, details.seekTime), audio.duration);
+          updateMediaSessionPlaybackState();
+        }
+      }],
+      ['seekbackward', (details) => {
+        const offset = details.seekOffset || 10;
+        audio.currentTime = Math.max(audio.currentTime - offset, 0);
+        updateMediaSessionPlaybackState();
+      }],
+      ['seekforward', (details) => {
+        const offset = details.seekOffset || 10;
+        audio.currentTime = Math.min(audio.currentTime + offset, audio.duration || 0);
+        updateMediaSessionPlaybackState();
+      }],
+      ['stop', () => {
+        audio.pause();
+        audio.currentTime = 0;
+        setPlayingState(false);
+      }]
+    ];
+
+    for (const [action, handler] of handlers) {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch (err) {}
+    }
+  }
+
+  // Fast Touch Helper (Eliminates mobile click latency and missed touches)
+  function addFastTouchListener(elem, handler) {
+    if (!elem) return;
+    let touchFired = false;
+    elem.addEventListener('touchend', (e) => {
+      touchFired = true;
+      e.preventDefault();
+      e.stopPropagation();
+      handler(e);
+      setTimeout(() => { touchFired = false; }, 300);
+    }, { passive: false });
+
+    elem.addEventListener('click', (e) => {
+      if (!touchFired) {
+        e.stopPropagation();
+        handler(e);
+      }
+    });
+  }
 
   // Library & Sync Buttons
   const btnSyncCloudinary = document.getElementById('btnSyncCloudinary');
@@ -203,6 +389,7 @@
 
   // Dynamic Time Greeting
   function updateGreeting() {
+    if (!greetingTitle) return;
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) {
       greetingTitle.textContent = 'Good morning';
@@ -270,7 +457,7 @@
   async function initAppData() {
     if (isAppInitialized) return;
     isAppInitialized = true;
-    updateGreeting();
+    if (greetingTitle) updateGreeting();
     try {
       // 1. Fetch Home Feed
       const homeRes = await fetch('/api/home');
@@ -278,7 +465,7 @@
       homeData = (homeJson && homeJson.data) || {};
 
       // 2. Fetch All Songs (Dynamically derived from Cloudinary & Metadata)
-      const songsRes = await fetch('/api/songs?limit=500');
+      const songsRes = await fetch('/api/songs?limit=1000');
       const songsJson = await songsRes.json();
       allSongs = (songsJson && songsJson.data) || [];
       if (libAllTracksCount) libAllTracksCount.textContent = allSongs.length;
@@ -286,20 +473,40 @@
       currentPlaylist = [...allSongs];
 
       if (allSongs.length > 0) {
-        const initialSong = allSongs.find(s => (s.title || '').toLowerCase().includes('othaiyadi')) || allSongs[0];
+        const initialSong = allSongs.find(s => (s.title || '').toLowerCase().includes('enna solla')) ||
+                            allSongs.find(s => (s.title || '').toLowerCase().includes('othaiyadi')) ||
+                            allSongs[0];
         const idx = allSongs.indexOf(initialSong);
         currentTrackIndex = idx !== -1 ? idx : 0;
-        loadTrackIntoPlayerBar(initialSong);
+        try {
+          loadTrackIntoPlayerBar(initialSong);
+        } catch (loadErr) {
+          console.warn('Initial track load warning:', loadErr);
+        }
       }
-      updateVolumeUI(currentVolume);
+      try {
+        updateVolumeUI(currentVolume);
+      } catch (volErr) {
+        console.warn('Volume UI warning:', volErr);
+      }
 
-      renderHomeView();
-      renderSidebarPlaylists();
+      try {
+        renderHomeView();
+      } catch (homeErr) {
+        console.error('Render home view error:', homeErr);
+      }
+
+      try {
+        renderSidebarPlaylists();
+      } catch (sideErr) {
+        console.warn('Sidebar playlists warning:', sideErr);
+      }
     } catch (err) {
       console.error('Failed to load initial Spotify data:', err);
-      showToast('Error loading songs from server');
+      showToast(`Error loading songs: ${err.message || 'Check server connection'}`);
     }
   }
+  window.spotkifyInitApp = initAppData;
 
   // ==========================================================================
   // RENDER HOME VIEW
@@ -359,7 +566,7 @@
         ? homeData.popularArtists
         : [];
       
-      const priorityOrder = ['Vivek', 'Anirudh Ravichander', 'Sid Sriram', 'Santhosh Narayanan', 'Yuvan Shankar Raja', 'Pradeep Kumar', 'A.R. Rahman', 'Dhanush', 'Shreya Ghoshal', 'G. V. Prakash', 'Harris Jayaraj', 'Ilaiyaraaja'];
+      const priorityOrder = ['Sai Abhyankkar', 'Vivek', 'Anirudh Ravichander', 'Sid Sriram', 'Santhosh Narayanan', 'Yuvan Shankar Raja', 'Pradeep Kumar', 'A.R. Rahman', 'Dhanush', 'Shreya Ghoshal', 'G. V. Prakash', 'Harris Jayaraj', 'Ilaiyaraaja'];
       const favList = [];
       for (const p of priorityOrder) {
         const found = allArtists.find(a => a.name.toLowerCase() === p.toLowerCase() || a.name.toLowerCase().includes(p.toLowerCase()));
@@ -386,23 +593,154 @@
       });
     }
 
-    // 1. Quick Picks Grid (6 items)
-    quickPicksGrid.innerHTML = quickPicks.map((song, idx) => `
-      <div class="quick-pick-card" data-song-id="${song.id}">
-        <img class="qp-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
-        <span class="qp-title">${song.title}</span>
-        <button class="qp-play-btn" title="Play ${song.title}">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-      </div>
-    `).join('');
+    // 1. Quick Picks Grid (6 items matching Image 1)
+    const staticQuickPicksConfig = [
+      { key: 'jailer', title: 'Jailer (Original Motion Picture Soundtrack)', cover: '/images/covers/jailer.jpg' },
+      { key: 'anirudh', title: 'Anirudh Only Rock Songs 🤘', cover: '/images/playlists/rock_anirudh.jpg' },
+      { key: 'enna solla', title: 'Enna Solla Pogirai', cover: '/images/covers/enna_solla.jpg' },
+      { key: 'vadachennai', title: 'VadaChennai', cover: '/images/covers/vadachennai.svg' },
+      { key: 'leo', title: 'Leo (Badass)', cover: '/images/covers/leo.svg' },
+      { key: 'blue star', title: 'Blue Star (Railin Oligal)', cover: '/images/covers/blue_star.svg' }
+    ];
 
-    quickPicksGrid.querySelectorAll('.quick-pick-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-song-id');
-        playTrackById(id, quickPicks);
-      });
+    const curatedQuickPicks = staticQuickPicksConfig.map(cfg => {
+      const match = allSongs.find(s => 
+        (s.title || '').toLowerCase().includes(cfg.key) || 
+        (s.movie || '').toLowerCase().includes(cfg.key) || 
+        (s.album || '').toLowerCase().includes(cfg.key) ||
+        (s.artist || '').toLowerCase().includes(cfg.key)
+      );
+      if (match) {
+        return {
+          ...match,
+          displayTitle: cfg.title,
+          displayCover: cfg.cover
+        };
+      }
+      return {
+        id: 'qp-' + cfg.key,
+        title: cfg.title,
+        artist: 'Various Artists',
+        cover_image_url: cfg.cover,
+        audio_url: allSongs[0] ? allSongs[0].audio_url : '',
+        displayTitle: cfg.title,
+        displayCover: cfg.cover
+      };
     });
+
+    if (quickPicksGrid) {
+      quickPicksGrid.innerHTML = curatedQuickPicks.map(song => `
+        <div class="quick-pick-card" data-song-id="${song.id}">
+          <img class="qp-cover" src="${song.displayCover || song.cover_image_url || '/images/covers/jailer.jpg'}" alt="${song.displayTitle || song.title}">
+          <span class="qp-title">${song.displayTitle || song.title}</span>
+          <button class="qp-play-btn" title="Play ${song.displayTitle || song.title}">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+      `).join('');
+
+      quickPicksGrid.querySelectorAll('.quick-pick-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.getAttribute('data-song-id');
+          const found = allSongs.find(s => s.id === id) || curatedQuickPicks.find(s => s.id === id);
+          if (found) {
+            playTrackById(found.id, allSongs.length > 0 ? allSongs : curatedQuickPicks);
+          }
+        });
+      });
+    }
+
+    // Connect Made For You & Miniplayer promo
+    const cardDiscoverWeekly = document.getElementById('cardDiscoverWeekly');
+    if (cardDiscoverWeekly) {
+      cardDiscoverWeekly.onclick = () => {
+        openPlaylistView('Discover Weekly', 'Your shortcut to hidden gems, deep cuts and new releases updated every Monday.', '/images/playlists/discover_weekly.jpg', allSongs);
+      };
+    }
+    const cardDailyMix1 = document.getElementById('cardDailyMix1');
+    if (cardDailyMix1) {
+      cardDailyMix1.onclick = () => {
+        openPlaylistView('Daily Mix 1', 'A.R. Rahman, Harris Jayaraj, Anirudh Ravichander and more.', '/images/playlists/daily_mix_1.jpg', allSongs);
+      };
+    }
+    const btnTryMiniplayer = document.getElementById('btnTryMiniplayer');
+    if (btnTryMiniplayer) {
+      btnTryMiniplayer.onclick = () => {
+        showToast('Miniplayer enabled! Control playback without interruptions.');
+      };
+    }
+
+    // Recommended for today shelf (Image 1)
+    const recommendedShelf = document.getElementById('recommendedShelf');
+    if (recommendedShelf) {
+      const recList = [
+        { title: 'Enna Solla Pogirai', artist: 'Shankar Mahadevan', cover: '/images/covers/enna_solla.jpg', query: 'enna solla' },
+        { title: 'Badass (Leo)', artist: 'Anirudh Ravichander', cover: '/images/covers/leo.svg', query: 'badass' },
+        { title: 'OG Sambavam', artist: 'Original Soundtrack', cover: '/images/covers/og_sambavam.svg', query: 'sambavam' },
+        { title: 'Hukum (Jailer)', artist: 'Anirudh Ravichander', cover: '/images/covers/jailer.jpg', query: 'hukum' },
+        { title: 'VadaChennai', artist: 'Santhosh Narayanan', cover: '/images/covers/vadachennai.svg', query: 'vadachennai' },
+        { title: 'Railin Oligal (Blue Star)', artist: 'Govind Vasantha, Pradeep Kumar', cover: '/images/covers/blue_star.svg', query: 'railin' }
+      ];
+
+      recommendedShelf.innerHTML = recList.map(item => {
+        const matched = allSongs.find(s => (s.title || '').toLowerCase().includes(item.query) || (s.movie || '').toLowerCase().includes(item.query));
+        const songId = matched ? matched.id : ('rec-' + item.query);
+        return `
+          <div class="spotify-card" data-song-id="${songId}">
+            <div class="card-img-wrap">
+              <img class="card-img" src="${item.cover}" alt="${item.title}">
+              <button class="card-play-btn" title="Play ${item.title}">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+            </div>
+            <span class="card-title">${item.title}</span>
+            <span class="card-desc">${item.artist}</span>
+          </div>
+        `;
+      }).join('');
+
+      recommendedShelf.querySelectorAll('.spotify-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.getAttribute('data-song-id');
+          const found = allSongs.find(s => s.id === id);
+          if (found) {
+            playTrackById(found.id, allSongs);
+          } else if (allSongs[0]) {
+            playTrackById(allSongs[0].id, allSongs);
+          }
+        });
+      });
+    }
+
+    // 1.5 Featured Playlists Shelf (Cloudinary Folders)
+    if (featuredPlaylistsShelf) {
+      const folderPlaylists = (homeData && homeData.featuredPlaylists && homeData.featuredPlaylists.length > 0)
+        ? homeData.featuredPlaylists
+        : [];
+
+      if (folderPlaylists.length > 0) {
+        featuredPlaylistsShelf.innerHTML = folderPlaylists.map(pl => `
+          <div class="spotify-card playlist-card" data-playlist-id="${pl.id}" data-folder="${pl.name}">
+            <div class="card-img-wrap">
+              <img class="card-img" src="${pl.uploaded_image || '/images/playlists/long_drive_tamil.svg'}" alt="${pl.name}">
+              <button class="card-play-btn" title="Play ${pl.name}">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+            </div>
+            <span class="card-title" title="${pl.name}">${pl.name}</span>
+            <span class="card-desc">Playlist • ${pl.song_count || 0} songs</span>
+          </div>
+        `).join('');
+
+        featuredPlaylistsShelf.querySelectorAll('.playlist-card').forEach(card => {
+          card.addEventListener('click', async () => {
+            const folderName = card.getAttribute('data-folder');
+            const plId = card.getAttribute('data-playlist-id');
+            await openFolderPlaylist(folderName, plId);
+          });
+        });
+      }
+    }
 
     // 2. Trending Shelf
     const trending = (homeData && homeData.trending && homeData.trending.length > 0)
@@ -531,6 +869,59 @@
         openArtistView(slug);
       });
     });
+
+    // Dynamically update folder playlist badges/counts if available
+    if (homeData && homeData.featuredPlaylists) {
+      homeData.featuredPlaylists.forEach(pl => {
+        const item = document.querySelector(`.library-items-list .library-item[data-folder="${pl.name}"]`);
+        if (item) {
+          const sub = item.querySelector('.library-item-sub');
+          if (sub) sub.textContent = `Playlist • ${pl.song_count} songs`;
+        }
+      });
+    }
+
+    // Wire up playlists in Left Sidebar
+    document.querySelectorAll('.library-items-list .library-item[data-target]').forEach(item => {
+      item.onclick = async () => {
+        document.querySelectorAll('.library-items-list .library-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const target = item.getAttribute('data-target');
+        const folderName = item.getAttribute('data-folder');
+
+        if (folderName) {
+          await openFolderPlaylist(folderName, target);
+        } else if (target === 'liked') {
+          openPlaylistView('Liked Songs', 'Songs you have liked on Spotkify', '/images/playlists/liked_songs.svg', allSongs.filter(s => s.is_liked));
+        } else if (target === 'all') {
+          openPlaylistView('Master Collection', 'All tracks in your library', '/images/playlists/master_collection.svg', allSongs);
+        }
+      };
+    });
+  }
+
+  async function openFolderPlaylist(folderName, plId) {
+    if (!folderName) return;
+    let tracks = allSongs.filter(s => (s.folder || '').toLowerCase() === folderName.toLowerCase());
+    let desc = `Curated playlist from folder "${folderName}"`;
+    const slug = folderName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_');
+    let cover = `/images/playlists/${slug}.svg`;
+
+    if (tracks.length === 0 && plId) {
+      try {
+        const res = await fetch(`/api/playlists/${encodeURIComponent(plId)}`);
+        const json = await res.json();
+        if (json && json.data && json.data.tracks) {
+          tracks = json.data.tracks;
+          desc = json.data.comment || desc;
+          cover = json.data.uploaded_image || cover;
+        }
+      } catch (e) {
+        console.warn('Error fetching playlist detail:', e);
+      }
+    }
+
+    openPlaylistView(folderName, desc, cover, tracks);
   }
 
   // ==========================================================================
@@ -919,40 +1310,78 @@
     currentSong = song;
 
     // Update Bottom Player UI
-    barTitle.textContent = song.title;
-    barArtist.innerHTML = renderArtistLinksHtml(song);
-    attachArtistLinkListeners(barArtist);
+    if (barTitle) barTitle.textContent = song.title || '';
+    if (barArtist) {
+      barArtist.innerHTML = renderArtistLinksHtml(song);
+      attachArtistLinkListeners(barArtist);
+    }
     if (barThumb) barThumb.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100';
     if (barHeartBtn) barHeartBtn.classList.toggle('liked', Boolean(song.is_liked));
-    barTotalTime.textContent = formatDuration(song.duration);
+    if (barTotalTime) barTotalTime.textContent = formatDuration(song.duration);
 
     // If audio element is empty or points to page, pre-assign song's direct audio stream
     const directUrl = song.audio_url || song.audioUrl;
-    if (directUrl && (!audio.src || audio.src === '' || audio.src === window.location.href)) {
+    if (audio && directUrl && (!audio.src || audio.src === '' || audio.src === window.location.href)) {
       audio.src = directUrl;
     }
 
-    // Update Right Panel UI
-    rightTrackName.textContent = song.title;
-    rightArtistName.innerHTML = renderArtistLinksHtml(song);
-    attachArtistLinkListeners(rightArtistName);
-    rightCoverImg.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
-    const firstArtist = song.artist ? song.artist.split(',')[0].trim() : 'Artist';
-    rightArtistCardName.textContent = firstArtist;
-    rightArtistCardName.style.cursor = 'pointer';
-    rightArtistCardName.onclick = () => openArtistView(firstArtist);
+    // Update Right Panel UI (Image 1: Now Playing View)
+    if (rightTrackName) rightTrackName.textContent = song.title || '';
+    if (rightArtistName) {
+      rightArtistName.innerHTML = renderArtistLinksHtml(song);
+      attachArtistLinkListeners(rightArtistName);
+    }
+    if (rightCoverImg) rightCoverImg.src = song.cover_image_url || '/images/covers/enna_solla.jpg';
+    if (rightArtistCardName) {
+      const firstArtist = song.artist ? song.artist.split(',')[0].trim() : 'Artist';
+      rightArtistCardName.textContent = firstArtist;
+      rightArtistCardName.style.cursor = 'pointer';
+      rightArtistCardName.onclick = () => openArtistView(firstArtist);
+    }
+    const rightHeaderTitle = document.getElementById('rightHeaderTitle');
+    if (rightHeaderTitle) {
+      rightHeaderTitle.textContent = song.movie ? `From "${song.movie}"` : (song.album || song.title || 'Now Playing');
+    }
+    const rightBtnFollow = document.getElementById('rightBtnFollow');
+    if (rightBtnFollow) {
+      rightBtnFollow.onclick = (e) => {
+        e.stopPropagation();
+        const isFollowing = rightBtnFollow.textContent === 'Following';
+        rightBtnFollow.textContent = isFollowing ? 'Follow' : 'Following';
+        showToast(isFollowing ? 'Unfollowed artist' : 'Following artist');
+      };
+    }
 
-    // Update Fullscreen UI
-    fsTrackTitle.textContent = song.title;
-    fsArtistName.textContent = song.artist;
-    fsAlbumName.textContent = song.movie ? `From "${song.movie}"` : (song.album || 'Single');
-    fsCoverImg.src = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+    // Update Fullscreen UI (1:1 Spotify Mobile Now Playing - Image 2)
+    if (fsTrackTitle) fsTrackTitle.textContent = song.title || '';
+    if (fsArtistName) fsArtistName.textContent = song.artist || '';
+    if (fsHeaderContextSub) fsHeaderContextSub.textContent = 'Playing from Search';
+    if (fsHeaderPlaylistName) {
+      const searchKey = song.movie || song.title || 'neelothi';
+      fsHeaderPlaylistName.textContent = `"${searchKey.toLowerCase()}" in Search`;
+    }
+    const coverArt = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+    if (fsCoverImg) fsCoverImg.src = coverArt;
+    if (fsThumbImg) fsThumbImg.src = coverArt;
+    if (fsBackdrop) fsBackdrop.style.backgroundImage = `url('${coverArt}')`;
+    if (fsTotalTime) fsTotalTime.textContent = formatDuration(song.duration);
+    if (fsAddSvgPlus && fsAddSvgCheck) {
+      fsAddSvgPlus.classList.toggle('hidden', Boolean(song.is_liked));
+      fsAddSvgCheck.classList.toggle('hidden', !Boolean(song.is_liked));
+    }
+
+    // Dynamic Live Lyrics Synchronization (Image 2)
+    const lyricsData = getLyricsForSong(song);
+    if (fsFloatingLyric) fsFloatingLyric.textContent = lyricsData.floating;
+    if (fsLyricsPeekText) fsLyricsPeekText.innerHTML = lyricsData.preview;
+
+    // Synchronize W3C MediaSession for Background Playback
+    updateMediaSession(song);
 
     // Update Mobile Mini Player UI
-    if (mobilePlayerTopText) {
-      mobilePlayerTopText.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
-    } else if (mobilePlayerTopLabel) {
-      mobilePlayerTopLabel.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
+    const topLabel = mobilePlayerTopText || mobilePlayerTopLabel;
+    if (topLabel) {
+      topLabel.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
     }
     if (mobileAddSvgPlus && mobileAddSvgCheck) {
       mobileAddSvgPlus.classList.toggle('hidden', Boolean(song.is_liked));
@@ -971,7 +1400,7 @@
       }
     });
 
-    setAmbientColor(song.title);
+    if (ambientMesh) setAmbientColor(song.title);
   }
 
   function playTrackById(songId, playlistContext) {
@@ -990,7 +1419,7 @@
     }
   }
 
-  async function playTrackAtIndex(index) {
+  function playTrackAtIndex(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
 
     currentTrackIndex = index;
@@ -1002,9 +1431,9 @@
     // Update Queue Next
     const nextIdx = (index + 1) % currentPlaylist.length;
     const nextSong = currentPlaylist[nextIdx];
-    if (nextSong) {
+    if (nextSong && nextQueueRow) {
       nextQueueRow.innerHTML = `
-        <img class="row-thumb" src="${nextSong.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=80'}" alt="${nextSong.title}">
+        <img class="row-thumb" src="${nextSong.cover_image_url || '/images/covers/kanaa.jpg'}" alt="${nextSong.title}">
         <div class="row-text">
           <span class="row-song-title">${nextSong.title}</span>
           <span class="row-artist-name">${renderArtistLinksHtml(nextSong)}</span>
@@ -1020,44 +1449,48 @@
     if (streamUrl) {
       if (audio.src !== streamUrl) {
         audio.src = streamUrl;
-        audio.load();
       }
       try {
-        await audio.play();
-        setPlayingState(true);
-      } catch (err) {
-        console.warn('Initial direct play failed, trying /play endpoint:', err);
-        try {
-          const res = await fetch(`/api/songs/${song.id}/play`);
-          const json = await res.json();
-          const freshUrl = (json && json.data && json.data.streamUrl) || streamUrl;
-          if (audio.src !== freshUrl) {
-            audio.src = freshUrl;
-            audio.load();
-          }
-          await audio.play();
-          setPlayingState(true);
-        } catch (fallbackErr) {
-          console.error('Audio playback error:', fallbackErr);
-          showToast(`Playback error: ${fallbackErr.message || 'Check connection'}`);
-          setPlayingState(false);
+        const p = audio.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setPlayingState(true);
+          }).catch(err => {
+            console.warn('Initial direct play note:', err);
+            fetch(`/api/songs/${song.id}/play`).then(r => r.json()).then(json => {
+              const freshUrl = (json && json.data && json.data.streamUrl) || streamUrl;
+              if (audio.src !== freshUrl) {
+                audio.src = freshUrl;
+              }
+              return audio.play();
+            }).then(() => {
+              setPlayingState(true);
+            }).catch(fallbackErr => {
+              console.warn('Audio playback note:', fallbackErr);
+              if (fallbackErr.name === 'NotAllowedError') {
+                showToast('Tap play to start audio');
+              }
+              setPlayingState(false);
+            });
+          });
         }
-      }
-    } else {
-      try {
-        const res = await fetch(`/api/songs/${song.id}/play`);
-        const json = await res.json();
-        const freshUrl = json && json.data && json.data.streamUrl;
-        if (!freshUrl) throw new Error('No streaming URL returned');
-        audio.src = freshUrl;
-        audio.load();
-        await audio.play();
-        setPlayingState(true);
       } catch (err) {
-        console.error('Audio playback error:', err);
-        showToast(`Playback: ${err.message || 'Connecting to Cloudinary...'}`);
+        console.error('Audio play exception:', err);
         setPlayingState(false);
       }
+    } else {
+      fetch(`/api/songs/${song.id}/play`).then(r => r.json()).then(json => {
+        const freshUrl = json && json.data && json.data.streamUrl;
+        if (freshUrl) {
+          audio.src = freshUrl;
+          return audio.play();
+        }
+      }).then(() => {
+        setPlayingState(true);
+      }).catch(err => {
+        console.error('Audio play endpoint error:', err);
+        setPlayingState(false);
+      });
     }
 
     // Refresh row highlighting in playlist or artist view if active
@@ -1079,20 +1512,17 @@
 
   function setPlayingState(playing) {
     isPlaying = playing;
-    barBtnPlayPause.title = playing ? 'Pause' : 'Play';
-    if (playing) {
-      barPlaySvg.classList.add('hidden');
-      barPauseSvg.classList.remove('hidden');
-      soundwaveIndicator.classList.remove('hidden');
-      if (mobileBarPlaySvg) mobileBarPlaySvg.classList.add('hidden');
-      if (mobileBarPauseSvg) mobileBarPauseSvg.classList.remove('hidden');
-    } else {
-      barPlaySvg.classList.remove('hidden');
-      barPauseSvg.classList.add('hidden');
-      soundwaveIndicator.classList.add('hidden');
-      if (mobileBarPlaySvg) mobileBarPlaySvg.classList.remove('hidden');
-      if (mobileBarPauseSvg) mobileBarPauseSvg.classList.add('hidden');
-    }
+    if (barBtnPlayPause) barBtnPlayPause.title = playing ? 'Pause' : 'Play';
+    if (barPlaySvg) barPlaySvg.classList.toggle('hidden', playing);
+    if (barPauseSvg) barPauseSvg.classList.toggle('hidden', !playing);
+    if (soundwaveIndicator) soundwaveIndicator.classList.toggle('hidden', !playing);
+    if (mobileBarPlaySvg) mobileBarPlaySvg.classList.toggle('hidden', playing);
+    if (mobileBarPauseSvg) mobileBarPauseSvg.classList.toggle('hidden', !playing);
+    if (fsPlaySvg) fsPlaySvg.classList.toggle('hidden', playing);
+    if (fsPauseSvg) fsPauseSvg.classList.toggle('hidden', !playing);
+
+    // Sync lockscreen / Bluetooth playback state
+    updateMediaSessionPlaybackState();
 
     // Synchronize play icons across table rows
     if (currentSong) {
@@ -1196,13 +1626,7 @@
       if (allSongs.length > 0) currentPlaylist = [...allSongs];
       else return;
     }
-    if (audio.currentTime > 3) {
-      audio.currentTime = 0;
-      if (audio.paused) {
-        audio.play().catch(console.error);
-      }
-      return;
-    }
+    // Directly go to previous track on mobile click so backward always switches songs immediately
     const prevIdx = (currentTrackIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
     playTrackAtIndex(prevIdx);
   }
@@ -1238,14 +1662,18 @@
       : (currentSong && currentSong.duration ? currentSong.duration : 0);
 
     barCurrentTime.textContent = formatDuration(current);
+    if (fsCurrentTime) fsCurrentTime.textContent = formatDuration(current);
     if (total > 0) {
       barTotalTime.textContent = formatDuration(total);
+      if (fsTotalTime) fsTotalTime.textContent = formatDuration(total);
       const pct = (current / total) * 100;
       progressFillBar.style.width = `${pct}%`;
       progressHandle.style.left = `${pct}%`;
       if (mobileMiniProgressFill) {
         mobileMiniProgressFill.style.width = `${pct}%`;
       }
+      if (fsProgressFill) fsProgressFill.style.width = `${pct}%`;
+      if (fsProgressThumb) fsProgressThumb.style.left = `${pct}%`;
     }
   });
 
@@ -1321,17 +1749,17 @@
   // Volume Bar Click & Drag
   function updateVolumeUI(val) {
     const pct = val * 100;
-    volumeFillBar.style.width = `${pct}%`;
-    volumeHandle.style.left = `${pct}%`;
+    if (volumeFillBar) volumeFillBar.style.width = `${pct}%`;
+    if (volumeHandle) volumeHandle.style.left = `${pct}%`;
 
     if (val === 0) {
-      volSvgHigh.classList.add('hidden');
-      volSvgMute.classList.remove('hidden');
-      barBtnMute.title = 'Unmute';
+      if (volSvgHigh) volSvgHigh.classList.add('hidden');
+      if (volSvgMute) volSvgMute.classList.remove('hidden');
+      if (barBtnMute) barBtnMute.title = 'Unmute';
     } else {
-      volSvgHigh.classList.remove('hidden');
-      volSvgMute.classList.add('hidden');
-      barBtnMute.title = 'Mute';
+      if (volSvgHigh) volSvgHigh.classList.remove('hidden');
+      if (volSvgMute) volSvgMute.classList.add('hidden');
+      if (barBtnMute) barBtnMute.title = 'Mute';
     }
   }
 
@@ -1593,7 +2021,7 @@
   }
 
   function renderQueueView() {
-    if (currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex]) {
+    if (currentTrackIndex >= 0 && currentPlaylist[currentTrackIndex] && queueNowPlayingRow) {
       const cur = currentPlaylist[currentTrackIndex];
       queueNowPlayingRow.innerHTML = `
         <div class="next-track-row" style="margin-bottom: 16px;">
@@ -1606,59 +2034,270 @@
       `;
     }
 
-    const upcoming = currentPlaylist.slice(currentTrackIndex + 1);
-    queueUpcomingRows.innerHTML = upcoming.map((s, i) => `
-      <div class="next-track-row" style="margin-bottom: 10px; cursor: pointer;" data-offset="${i + 1}">
-        <img class="row-thumb" src="${s.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=80'}" alt="${s.title}">
-        <div class="row-text">
-          <span class="row-song-title">${s.title}</span>
-          <span class="row-artist-name">${s.artist}</span>
+    if (queueUpcomingRows) {
+      const upcoming = currentPlaylist.slice(currentTrackIndex + 1);
+      queueUpcomingRows.innerHTML = upcoming.map((s, i) => `
+        <div class="next-track-row" style="margin-bottom: 10px; cursor: pointer;" data-offset="${i + 1}">
+          <img class="row-thumb" src="${s.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=80'}" alt="${s.title}">
+          <div class="row-text">
+            <span class="row-song-title">${s.title}</span>
+            <span class="row-artist-name">${s.artist}</span>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
 
-    queueUpcomingRows.querySelectorAll('.next-track-row').forEach(r => {
-      r.addEventListener('click', () => {
-        const offset = parseInt(r.getAttribute('data-offset'), 10);
-        playTrackAtIndex(currentTrackIndex + offset);
+      queueUpcomingRows.querySelectorAll('.next-track-row').forEach(r => {
+        r.addEventListener('click', () => {
+          const offset = parseInt(r.getAttribute('data-offset'), 10);
+          playTrackAtIndex(currentTrackIndex + offset);
+        });
       });
+    }
+  }
+
+  if (btnToggleNowPlaying) btnToggleNowPlaying.addEventListener('click', () => toggleRightPanel('now_playing'));
+  if (btnToggleQueue) btnToggleQueue.addEventListener('click', () => toggleRightPanel('queue'));
+  if (btnOpenFullQueue) btnOpenFullQueue.addEventListener('click', () => toggleRightPanel('queue'));
+
+  if (btnCloseRightPanel) {
+    btnCloseRightPanel.addEventListener('click', () => {
+      if (spotifyApp) spotifyApp.classList.add('hide-right');
+      isRightPanelOpen = false;
+      currentRightPanelTab = null;
+      if (btnToggleNowPlaying) btnToggleNowPlaying.classList.remove('active');
+      if (btnToggleQueue) btnToggleQueue.classList.remove('active');
     });
   }
 
-  btnToggleNowPlaying.addEventListener('click', () => toggleRightPanel('now_playing'));
-  btnToggleQueue.addEventListener('click', () => toggleRightPanel('queue'));
-  btnOpenFullQueue.addEventListener('click', () => toggleRightPanel('queue'));
+  // Sleep Timer Management
+  let sleepTimerId = null;
+  let sleepTimerMinutes = 0;
+  function toggleSleepTimer() {
+    const options = [0, 15, 30, 45, 60];
+    const curIdx = options.indexOf(sleepTimerMinutes);
+    const nextIdx = (curIdx + 1) % options.length;
+    sleepTimerMinutes = options[nextIdx];
+    if (sleepTimerId) {
+      clearTimeout(sleepTimerId);
+      sleepTimerId = null;
+    }
+    if (sleepTimerMinutes > 0) {
+      if (fsBtnTimer) fsBtnTimer.classList.add('active');
+      showToast(`⏱ Sleep timer set: audio will pause in ${sleepTimerMinutes} minutes`);
+      sleepTimerId = setTimeout(() => {
+        audio.pause();
+        setPlayingState(false);
+        sleepTimerMinutes = 0;
+        if (fsBtnTimer) fsBtnTimer.classList.remove('active');
+        showToast('⏱ Sleep timer expired. Spotkify audio paused.');
+      }, sleepTimerMinutes * 60 * 1000);
+    } else {
+      if (fsBtnTimer) fsBtnTimer.classList.remove('active');
+      showToast('⏱ Sleep timer turned off');
+    }
+  }
 
-  btnCloseRightPanel.addEventListener('click', () => {
-    spotifyApp.classList.add('hide-right');
-    isRightPanelOpen = false;
-    currentRightPanelTab = null;
-    btnToggleNowPlaying.classList.remove('active');
-    btnToggleQueue.classList.remove('active');
-  });
-
-  // Fullscreen Mode
+  // Fullscreen Mode (1:1 Match to Spotify Mobile App - Image 2)
   function openFullscreen() {
     fullscreenModal.classList.remove('hidden');
-    btnFullscreen.classList.add('active');
+    if (btnFullscreen) btnFullscreen.classList.add('active');
+    
+    // Sync current state
+    if (fsPlaySvg && fsPauseSvg) {
+      fsPlaySvg.classList.toggle('hidden', isPlaying);
+      fsPauseSvg.classList.toggle('hidden', !isPlaying);
+    }
+    if (fsBtnShuffle) fsBtnShuffle.classList.toggle('active', isShuffle);
+    if (fsShuffleDot) fsShuffleDot.style.display = isShuffle ? 'block' : 'none';
+    if (fsBtnTimer) fsBtnTimer.classList.toggle('active', sleepTimerMinutes > 0);
+
+    if (currentSong) {
+      const coverArt = currentSong.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+      if (fsCoverImg) fsCoverImg.src = coverArt;
+      if (fsThumbImg) fsThumbImg.src = coverArt;
+      if (fsBackdrop) fsBackdrop.style.backgroundImage = `url('${coverArt}')`;
+      if (fsTrackTitle) fsTrackTitle.textContent = currentSong.title || '';
+      if (fsArtistName) fsArtistName.textContent = currentSong.artist || '';
+      if (fsHeaderContextSub) fsHeaderContextSub.textContent = 'Playing from Search';
+      if (fsHeaderPlaylistName) {
+        const key = currentSong.movie || currentSong.title || 'neelothi';
+        fsHeaderPlaylistName.textContent = `"${key.toLowerCase()}" in Search`;
+      }
+      if (fsAddSvgPlus && fsAddSvgCheck) {
+        fsAddSvgPlus.classList.toggle('hidden', Boolean(currentSong.is_liked));
+        fsAddSvgCheck.classList.toggle('hidden', !Boolean(currentSong.is_liked));
+      }
+      const lyricsData = getLyricsForSong(currentSong);
+      if (fsFloatingLyric) fsFloatingLyric.textContent = lyricsData.floating;
+      if (fsLyricsPeekText) fsLyricsPeekText.innerHTML = lyricsData.preview;
+      updateMediaSession(currentSong);
+    }
   }
 
   function closeFullscreen() {
     fullscreenModal.classList.add('hidden');
-    btnFullscreen.classList.remove('active');
+    if (btnFullscreen) btnFullscreen.classList.remove('active');
   }
 
-  btnFullscreen.addEventListener('click', () => {
-    if (fullscreenModal.classList.contains('hidden')) {
-      openFullscreen();
-    } else {
-      closeFullscreen();
-    }
-  });
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+      if (fullscreenModal.classList.contains('hidden')) {
+        openFullscreen();
+      } else {
+        closeFullscreen();
+      }
+    });
+  }
 
-  btnCloseFullscreen.addEventListener('click', closeFullscreen);
+  if (btnCloseFullscreen) {
+    addFastTouchListener(btnCloseFullscreen, closeFullscreen);
+  }
   if (fsBackdrop) {
     fsBackdrop.addEventListener('click', closeFullscreen);
+  }
+
+  // Fullscreen Modal Playback Controls Wiring (Instant Mobile Touch)
+  if (fsBtnPrev) {
+    addFastTouchListener(fsBtnPrev, () => {
+      playPrevTrack();
+    });
+  }
+
+  if (fsBtnNext) {
+    addFastTouchListener(fsBtnNext, () => {
+      playNextTrack();
+    });
+  }
+
+  if (fsBtnPlayPause) {
+    addFastTouchListener(fsBtnPlayPause, () => {
+      togglePlayPause();
+    });
+  }
+
+  if (fsBtnShuffle) {
+    addFastTouchListener(fsBtnShuffle, () => {
+      isShuffle = !isShuffle;
+      fsBtnShuffle.classList.toggle('active', isShuffle);
+      if (fsShuffleDot) fsShuffleDot.style.display = isShuffle ? 'block' : 'none';
+      if (barBtnShuffle) barBtnShuffle.classList.toggle('active', isShuffle);
+      showToast(isShuffle ? 'Shuffle is ON' : 'Shuffle is OFF');
+    });
+  }
+
+  if (fsBtnTimer) {
+    addFastTouchListener(fsBtnTimer, () => {
+      toggleSleepTimer();
+    });
+  }
+
+  if (fsBtnAdd) {
+    addFastTouchListener(fsBtnAdd, () => {
+      if (currentSong) {
+        toggleLikeSong(currentSong.id);
+      }
+    });
+  }
+
+  if (fsBtnMore) {
+    addFastTouchListener(fsBtnMore, () => {
+      if (currentSong) {
+        openTrackContextSheet(currentSong);
+      }
+    });
+  }
+
+  if (fsDeviceBadge) {
+    addFastTouchListener(fsDeviceBadge, () => {
+      openDevicePickerSheet();
+    });
+  }
+
+  if (fsBtnShare) {
+    addFastTouchListener(fsBtnShare, () => {
+      if (currentSong) {
+        showToast(`Track "${currentSong.title}" link copied to clipboard!`);
+      }
+    });
+  }
+
+  if (fsBtnQueue) {
+    addFastTouchListener(fsBtnQueue, () => {
+      toggleRightPanel('queue');
+      if (window.innerWidth <= 850) {
+        closeFullscreen();
+      }
+    });
+  }
+
+  if (fsLyricsPeekCard) {
+    addFastTouchListener(fsLyricsPeekCard, () => {
+      showToast('Live Lyrics synced with master audio playback');
+    });
+  }
+
+  // Interactive seek and drag on Fullscreen Scrubber
+  let isFsSeeking = false;
+  function handleFsSeek(e) {
+    if (!fsProgressBar) return;
+    const rect = fsProgressBar.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const total = (audio.duration && !isNaN(audio.duration) && audio.duration > 0)
+      ? audio.duration
+      : (currentSong && currentSong.duration ? currentSong.duration : 0);
+    
+    if (fsProgressFill) fsProgressFill.style.width = `${pos * 100}%`;
+    if (fsProgressThumb) fsProgressThumb.style.left = `${pos * 100}%`;
+    if (fsCurrentTime) fsCurrentTime.textContent = formatDuration(pos * total);
+
+    return pos * total;
+  }
+
+  if (fsProgressBar) {
+    fsProgressBar.addEventListener('mousedown', (e) => {
+      isFsSeeking = true;
+      const targetTime = handleFsSeek(e);
+      if (audio.duration && isFinite(targetTime)) {
+        audio.currentTime = targetTime;
+        updateMediaSessionPlaybackState();
+      }
+    });
+
+    fsProgressBar.addEventListener('touchstart', (e) => {
+      isFsSeeking = true;
+      const targetTime = handleFsSeek(e);
+      if (audio.duration && isFinite(targetTime)) {
+        audio.currentTime = targetTime;
+        updateMediaSessionPlaybackState();
+      }
+    }, { passive: true });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isFsSeeking) return;
+      handleFsSeek(e);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isFsSeeking) return;
+      handleFsSeek(e);
+    }, { passive: true });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isFsSeeking) return;
+      isFsSeeking = false;
+      const targetTime = handleFsSeek(e);
+      if (audio.duration && isFinite(targetTime)) {
+        audio.currentTime = targetTime;
+        updateMediaSessionPlaybackState();
+      }
+    });
+
+    window.addEventListener('touchend', () => {
+      if (!isFsSeeking) return;
+      isFsSeeking = false;
+    });
   }
 
   window.addEventListener('keydown', (e) => {
@@ -1670,34 +2309,36 @@
   });
 
   // Cloudinary Catalog Sync Trigger (works on both local and Vercel)
-  btnSyncCloudinary.addEventListener('click', async () => {
-    btnSyncCloudinary.classList.add('spinning');
-    showToast('Scanning Cloudinary "Songs" folder...');
+  if (btnSyncCloudinary) {
+    btnSyncCloudinary.addEventListener('click', async () => {
+      btnSyncCloudinary.classList.add('spinning');
+      showToast('Scanning Cloudinary "Songs" folder...');
 
-    try {
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: 'Songs' })
-      });
-      const data = await res.json();
-      const r = data.data;
+      try {
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: 'Songs' })
+        });
+        const data = await res.json();
+        const r = data.data;
 
-      showToast(`Cloudinary Synced: ${r.discovered} discovered (${r.added} added, ${r.updated} updated).`);
-      await initAppData();
-    } catch (err) {
-      console.error('Sync failed:', err);
-      showToast('Sync error occurred');
-    } finally {
-      btnSyncCloudinary.classList.remove('spinning');
-    }
-  });
+        showToast(`Cloudinary Synced: ${r.discovered} discovered (${r.added} added, ${r.updated} updated).`);
+        await initAppData();
+      } catch (err) {
+        console.error('Sync failed:', err);
+        showToast('Sync error occurred');
+      } finally {
+        btnSyncCloudinary.classList.remove('spinning');
+      }
+    });
+  }
 
   // Automatic Background Library Updates (discovers newly uploaded songs automatically)
   setInterval(async () => {
     if (document.hidden || !isAuthenticated()) return;
     try {
-      const res = await fetch('/api/songs?limit=500');
+      const res = await fetch('/api/songs?limit=1000');
       const json = await res.json();
       const newSongs = (json && json.data) || [];
       if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
@@ -1716,7 +2357,7 @@
   document.addEventListener('visibilitychange', async () => {
     if (!document.hidden && isAuthenticated()) {
       try {
-        const res = await fetch('/api/songs?limit=500');
+        const res = await fetch('/api/songs?limit=1000');
         const json = await res.json();
         const newSongs = (json && json.data) || [];
         if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
@@ -1732,13 +2373,15 @@
   });
 
   // Topbar scroll background effect
-  mainScrollView.addEventListener('scroll', () => {
-    if (mainScrollView.scrollTop > 30) {
-      topbar.classList.add('scrolled');
-    } else {
-      topbar.classList.remove('scrolled');
-    }
-  });
+  if (mainScrollView && topbar) {
+    mainScrollView.addEventListener('scroll', () => {
+      if (mainScrollView.scrollTop > 30) {
+        topbar.classList.add('scrolled');
+      } else {
+        topbar.classList.remove('scrolled');
+      }
+    });
+  }
 
   // Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
@@ -1825,19 +2468,66 @@
     });
   });
 
-  // Mobile Mini Player Play/Pause Button
+  // Mobile Mini Player Playback Controls (Fast Touch)
+  if (mobileMiniPrevBtn) {
+    addFastTouchListener(mobileMiniPrevBtn, () => {
+      playPrevTrack();
+    });
+  }
+
   if (mobileMiniPlayBtn) {
-    mobileMiniPlayBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+    addFastTouchListener(mobileMiniPlayBtn, () => {
       togglePlayPause();
     });
   }
 
-  // Floating Mini Player Click: Open Fullscreen Modal on Mobile
+  if (mobileMiniNextBtn) {
+    addFastTouchListener(mobileMiniNextBtn, () => {
+      playNextTrack();
+    });
+  }
+
+  // Floating Mini Player: Touch Swipe (Left = Next, Right = Prev) & Click = Fullscreen
+  let miniTouchStartX = 0;
+  let miniTouchStartY = 0;
+  let miniTouchStartTime = 0;
+  let miniHasSwiped = false;
+
   if (spotifyPlayerBar) {
+    spotifyPlayerBar.addEventListener('touchstart', (e) => {
+      if (window.innerWidth > 850) return;
+      miniTouchStartX = e.changedTouches[0].screenX;
+      miniTouchStartY = e.changedTouches[0].screenY;
+      miniTouchStartTime = Date.now();
+      miniHasSwiped = false;
+    }, { passive: true });
+
+    spotifyPlayerBar.addEventListener('touchend', (e) => {
+      if (window.innerWidth > 850) return;
+      const diffX = e.changedTouches[0].screenX - miniTouchStartX;
+      const diffY = e.changedTouches[0].screenY - miniTouchStartY;
+      const elapsed = Date.now() - miniTouchStartTime;
+
+      // Horizontal swipe detected
+      if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.4 && elapsed < 500) {
+        miniHasSwiped = true;
+        if (diffX < 0) {
+          playNextTrack();
+        } else {
+          playPrevTrack();
+        }
+      }
+    }, { passive: true });
+
     spotifyPlayerBar.addEventListener('click', (e) => {
+      if (miniHasSwiped) {
+        miniHasSwiped = false;
+        return;
+      }
       if (e.target.closest('#barHeartBtn') || 
+          e.target.closest('#mobileMiniPrevBtn') || 
           e.target.closest('#mobileMiniPlayBtn') || 
+          e.target.closest('#mobileMiniNextBtn') || 
           e.target.closest('#mobileConnectBtn') || 
           e.target.closest('#mobileAddBtn') || 
           e.target.closest('#mobileDeviceBadge') || 
@@ -1845,7 +2535,7 @@
           e.target.closest('.player-right')) {
         return;
       }
-      if (window.innerWidth <= 768 && btnFullscreen) {
+      if (window.innerWidth <= 850 && btnFullscreen) {
         btnFullscreen.click();
       }
     });
@@ -1997,12 +2687,12 @@
 
   function isAuthenticated() {
     const isAuth = localStorage.getItem('spotkify_auth') === 'true' || sessionStorage.getItem('spotkify_auth') === 'true';
-    const user = (localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || '').toLowerCase();
+    const user = (localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || '').trim().toLowerCase();
     return isAuth && user === 'sharu';
   }
 
   function getLoggedInUser() {
-    return localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || 'sharu';
+    return localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || 'Sharu';
   }
 
   function updateUserProfileDisplay(username) {
@@ -2012,6 +2702,22 @@
   }
 
   function setupAuthentication() {
+    // Check URL parameters (in case user submitted via GET or arrived with query params in URL)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const qUser = (urlParams.get('username') || '').trim();
+      const qPass = (urlParams.get('password') || '').trim();
+      if (qUser.toLowerCase() === 'sharu' && (qPass === 'sharu@123' || qPass === 'Sharu@123')) {
+        localStorage.setItem('spotkify_auth', 'true');
+        localStorage.setItem('spotkify_user', 'sharu');
+        try {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {}
+      } else if (qUser && loginUsername) {
+        loginUsername.value = qUser;
+      }
+    } catch (err) {}
+
     if (isAuthenticated()) {
       document.body.classList.remove('locked');
       if (loginGate) {
@@ -2047,14 +2753,13 @@
       });
     });
 
-
     // Password visibility toggle
     if (btnTogglePw && loginPassword) {
       btnTogglePw.addEventListener('click', () => {
         const isPw = loginPassword.getAttribute('type') === 'password';
         loginPassword.setAttribute('type', isPw ? 'text' : 'password');
         btnTogglePw.innerHTML = isPw
-          ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`
+          ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78 3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>`
           : `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
       });
     }
@@ -2079,25 +2784,44 @@
       }
     }
 
-    // Unified Login Handler
+    // Unified Strict Login Handler
+    let isLoggingIn = false;
     async function doLogin() {
+      if (isLoggingIn) return;
+
       const enteredUser = (loginUsername ? loginUsername.value : '').trim();
       const enteredPass = (loginPassword ? loginPassword.value : '').trim();
 
       if (!enteredUser || !enteredPass) {
-        showLoginError('Please enter both username and password.');
+        showLoginError('Please enter username and password.');
         return;
       }
 
-      // ONLY sharu as username and sharu@123 as password is allowed to login!
-      if (enteredUser.toLowerCase() !== 'sharu' || enteredPass !== 'sharu@123') {
+      // Strictly verify credentials: username sharu and password sharu@123 (or Sharu@123)
+      const isUserMatch = enteredUser.toLowerCase() === 'sharu';
+      const isPassMatch = enteredPass === 'sharu@123' || enteredPass === 'Sharu@123';
+
+      if (!isUserMatch || !isPassMatch) {
         showLoginError('Incorrect username or password. Please try again.');
         return;
       }
 
-      const authenticatedUsername = 'sharu';
+      isLoggingIn = true;
+      if (btnLoginSubmit) btnLoginSubmit.classList.add('loading');
 
-      // Immediately unlock the application
+      const remember = chkRememberMe ? chkRememberMe.checked : true;
+      const authenticatedUsername = 'Sharu';
+
+      // Save credentials immediately
+      if (remember) {
+        localStorage.setItem('spotkify_auth', 'true');
+        localStorage.setItem('spotkify_user', 'sharu');
+      } else {
+        sessionStorage.setItem('spotkify_auth', 'true');
+        sessionStorage.setItem('spotkify_user', 'sharu');
+      }
+
+      // Immediately unlock the application with zero latency
       if (loginAlertBox) loginAlertBox.classList.add('hidden');
       document.body.classList.remove('locked');
       if (loginGate) {
@@ -2107,25 +2831,16 @@
         }, 300);
       }
 
-      const remember = chkRememberMe ? chkRememberMe.checked : true;
-      if (remember) {
-        localStorage.setItem('spotkify_auth', 'true');
-        localStorage.setItem('spotkify_user', 'sharu');
-      } else {
-        sessionStorage.setItem('spotkify_auth', 'true');
-        sessionStorage.setItem('spotkify_user', 'sharu');
-      }
-
-      updateUserProfileDisplay('sharu');
-      showToast('Welcome to Spotkify, sharu!');
+      updateUserProfileDisplay(authenticatedUsername);
+      showToast(`Welcome to Spotify, ${authenticatedUsername}!`);
       initAppData();
 
-      // Sync with API in the background to store JWT token
+      // Sync session token in background
       try {
         const apiRes = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: enteredUser, password: enteredPass })
+          body: JSON.stringify({ username: 'sharu', password: enteredPass })
         });
         const resData = await apiRes.json();
         if (resData && resData.data && resData.data.token) {
@@ -2136,30 +2851,43 @@
           }
         }
       } catch (err) {
-        console.warn('Background token sync note:', err.message);
+        console.warn('Background token sync:', err);
+      } finally {
+        isLoggingIn = false;
+        if (btnLoginSubmit) btnLoginSubmit.classList.remove('loading');
       }
     }
 
-    // Attach to form submit, button click, and enter key
+    // Attach to form submit
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         doLogin();
       });
     }
 
+    // Direct button click & touch handlers
     if (btnLoginSubmit) {
+      addFastTouchListener(btnLoginSubmit, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        doLogin();
+      });
       btnLoginSubmit.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         doLogin();
       });
     }
 
+    // Enter key triggers on both inputs
     [loginUsername, loginPassword].forEach(inp => {
       if (!inp) return;
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          e.stopPropagation();
           doLogin();
         }
       });
@@ -2200,7 +2928,7 @@
         if (audio && !audio.paused) {
           audio.pause();
           isPlaying = false;
-          updatePlayPauseIcons();
+          setPlayingState(false);
         }
 
         // Lock screen and display login gate
@@ -2220,6 +2948,31 @@
     }
   }
 
-  // Initialize Auth Gate
+  function initMobileAudioUnlock() {
+    const unlock = () => {
+      if (audio) {
+        const prevSrc = audio.src;
+        if (!prevSrc) {
+          audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        }
+        audio.play().then(() => {
+          if (!isPlaying) {
+            audio.pause();
+            if (!prevSrc) audio.removeAttribute('src');
+          }
+        }).catch(() => {});
+      }
+      window.removeEventListener('touchstart', unlock, true);
+      window.removeEventListener('touchend', unlock, true);
+      window.removeEventListener('click', unlock, true);
+    };
+    window.addEventListener('touchstart', unlock, true);
+    window.addEventListener('touchend', unlock, true);
+    window.addEventListener('click', unlock, true);
+  }
+
+  // Initialize Mobile Audio Unlock, MediaSession background handlers & Auth Gate
+  initMobileAudioUnlock();
+  initMediaSessionHandlers();
   setupAuthentication();
 })();

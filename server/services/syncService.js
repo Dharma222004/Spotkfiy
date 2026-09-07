@@ -121,12 +121,12 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
         id, path, title, artist, artist_id, artists_json, album, album_id, album_artist, album_artist_id,
         duration, size, suffix, genre, language, year, has_cover_art,
         cloudinary_public_id, audio_url, cover_image_url, is_active,
-        movie, slug, search_keywords, full_text, created_at, updated_at
+        movie, folder, slug, search_keywords, full_text, created_at, updated_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, 1,
-        ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
       )
     `);
 
@@ -134,7 +134,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
       UPDATE media_file SET
         title = ?, artist = ?, artist_id = ?, artists_json = ?, album = ?, album_id = ?,
         duration = ?, size = ?, genre = ?, language = ?, audio_url = ?, cover_image_url = ?,
-        movie = ?, slug = ?, search_keywords = ?, full_text = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
+        movie = ?, folder = ?, slug = ?, search_keywords = ?, full_text = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
 
@@ -194,6 +194,15 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
       try {
         const pubId = res.public_id;
         const normPubId = normalizeStr(pubId);
+
+        // Extract folder name from asset_folder or folder
+        const rawFolder = res.asset_folder || res.folder || '';
+        let folderName = null;
+        if (rawFolder.startsWith('Songs/')) {
+          folderName = rawFolder.replace(/^Songs\//, '').trim();
+        } else if (rawFolder && rawFolder !== 'Songs') {
+          folderName = rawFolder.trim();
+        }
 
         // Extract title portion if formatted as Artists_-_Title
         let rawTitlePart = pubId;
@@ -311,6 +320,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
             audioUrl,
             coverImageUrl,
             movie,
+            folderName,
             slug,
             keywords,
             keywords,
@@ -350,6 +360,7 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
             audioUrl,
             coverImageUrl,
             movie,
+            folderName,
             slug,
             keywords,
             keywords
@@ -379,6 +390,65 @@ async function syncCloudinaryCatalog(customFolder = 'Songs') {
       `);
     } catch (albErr) {
       console.warn('[Sync] Album aggregation update note:', albErr.message);
+    }
+
+    // Synchronize Playlists from Cloudinary subfolders
+    try {
+      console.log('[Sync] Updating Playlists from Cloudinary subfolders...');
+      const folderRows = db.prepare(`
+        SELECT DISTINCT folder
+        FROM media_file
+        WHERE folder IS NOT NULL AND TRIM(folder) != ''
+      `).all();
+
+      const findPlaylistByName = db.prepare('SELECT id FROM playlist WHERE LOWER(name) = LOWER(?)');
+      const insertPlaylist = db.prepare(`
+        INSERT INTO playlist (id, name, comment, duration, song_count, public, owner_id, uploaded_image, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 1, 'admin-user-id', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `);
+      const updatePlaylist = db.prepare(`
+        UPDATE playlist SET
+          duration = ?, song_count = ?, uploaded_image = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      const clearPlaylistTracks = db.prepare('DELETE FROM playlist_tracks WHERE playlist_id = ?');
+      const insertPlaylistTrack = db.prepare('INSERT INTO playlist_tracks (playlist_id, media_file_id) VALUES (?, ?)');
+
+      for (const { folder } of folderRows) {
+        const songsInFolder = db.prepare(`
+          SELECT id, duration
+          FROM media_file
+          WHERE folder = ? AND (is_active = 1 OR is_active IS NULL)
+          ORDER BY title ASC
+        `).all(folder);
+
+        if (songsInFolder.length === 0) continue;
+
+        const songCount = songsInFolder.length;
+        const totalDuration = songsInFolder.reduce((sum, s) => sum + (s.duration || 0), 0);
+        const slug = folder.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_');
+        const uploadedImage = `/images/playlists/${slug}.svg`;
+        const comment = `Curated playlist from folder "${folder}"`;
+
+        const existingPl = findPlaylistByName.get(folder);
+        let plId = existingPl ? existingPl.id : null;
+
+        if (plId) {
+          updatePlaylist.run(totalDuration, songCount, uploadedImage, plId);
+        } else {
+          plId = `pl-${slug}`;
+          insertPlaylist.run(plId, folder, comment, totalDuration, songCount, uploadedImage);
+        }
+
+        // Re-populate playlist_tracks
+        clearPlaylistTracks.run(plId);
+        for (const s of songsInFolder) {
+          insertPlaylistTrack.run(plId, s.id);
+        }
+        console.log(`[Sync] Playlist "${folder}": ${songCount} songs synced (ID: ${plId}).`);
+      }
+    } catch (plErr) {
+      console.warn('[Sync] Folder playlist sync note:', plErr.message);
     }
 
     const summary = `Completed: Discovered ${discovered}, Added ${added}, Updated ${updated}, Duplicates ${duplicates}, Errors ${errors}.`;

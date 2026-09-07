@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="yuvGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a0e17" />
+      <stop offset="100%" stop-color="#871f30" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#yuvGrad)"/>
+  <text x="150" y="120" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="42" font-weight="900" fill="#ff758c" text-anchor="middle">U1</text>
+  <rect x="20" y="195" width="260" height="75" rx="6" fill="#000000" opacity="0.85"/>
+  <text x="35" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#ff758c" letter-spacing="2">SPOTKIFY ORIGINAL</text>
+  <text x="35" y="252" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#ffffff">Romantic Yuvan</text>
+</svg>

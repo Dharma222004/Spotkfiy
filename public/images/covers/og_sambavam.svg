@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="ogGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff4b1f" />
+      <stop offset="100%" stop-color="#1f1c18" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#ogGrad)"/>
+  <text x="150" y="125" font-family="Impact, sans-serif" font-size="64" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="3">OG</text>
+  <text x="150" y="170" font-family="Impact, sans-serif" font-size="34" font-weight="900" fill="#ffd700" text-anchor="middle" letter-spacing="2">SAMBAVAM</text>
+  <text x="150" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">TAMIL MASS SOUNDTRACK</text>
+</svg>

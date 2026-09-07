@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="leoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c0000" />
+      <stop offset="50%" stop-color="#800000" />
+      <stop offset="100%" stop-color="#150000" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#leoGrad)"/>
+  <text x="150" y="145" font-family="Impact, sans-serif" font-size="80" font-weight="900" fill="#ffcc00" text-anchor="middle" letter-spacing="6">LEO</text>
+  <text x="150" y="180" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="3">BLOODY SWEET</text>
+  <text x="150" y="260" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" fill="#e0e0e0" text-anchor="middle">ANIRUDH RAVICHANDER</text>
+</svg>

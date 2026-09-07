@@ -48,7 +48,7 @@ async function scanAudioResources(folder = defaultFolder, nextCursor = null) {
   try {
     let expression = 'resource_type:video';
     if (folder) {
-      expression += ` AND (folder:"${folder}" OR asset_folder:"${folder}")`;
+      expression += ` AND (folder:${folder}* OR asset_folder:${folder}* OR folder:"${folder}" OR asset_folder:"${folder}")`;
     }
     const searchReq = cloudinary.search
       .expression(expression)

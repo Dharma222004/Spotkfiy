@@ -100,6 +100,7 @@ function initSchema() {
       cover_image_url TEXT,
       is_active BOOLEAN DEFAULT 1,
       movie VARCHAR(255),
+      folder VARCHAR(255),
       slug VARCHAR(255),
       search_keywords TEXT,
       full_text TEXT,
@@ -146,6 +147,25 @@ function initSchema() {
       errors INTEGER DEFAULT 0,
       details TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS playlist (
+      id VARCHAR(255) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      comment TEXT,
+      duration INTEGER DEFAULT 0,
+      song_count INTEGER DEFAULT 0,
+      public BOOLEAN DEFAULT 1,
+      owner_id VARCHAR(255),
+      uploaded_image TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS playlist_tracks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      playlist_id VARCHAR(255) NOT NULL,
+      media_file_id VARCHAR(255) NOT NULL
+    );
   `);
 
   // 2. Inspect media_file columns and add any missing dynamically
@@ -161,6 +181,7 @@ function initSchema() {
     { name: 'search_keywords', type: 'TEXT' },
     { name: 'artists_json', type: 'TEXT' },
     { name: 'movie', type: 'VARCHAR(255)' },
+    { name: 'folder', type: 'VARCHAR(255)' },
     { name: 'slug', type: 'VARCHAR(255)' }
   ];
 
@@ -205,6 +226,10 @@ function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_artist_slug ON artist(slug);
       CREATE INDEX IF NOT EXISTS idx_mfa_media_file_id ON media_file_artists(media_file_id);
       CREATE INDEX IF NOT EXISTS idx_mfa_artist_id ON media_file_artists(artist_id);
+      CREATE INDEX IF NOT EXISTS idx_playlist_owner ON playlist(owner_id);
+      CREATE INDEX IF NOT EXISTS idx_playlist_tracks_pl ON playlist_tracks(playlist_id);
+      CREATE INDEX IF NOT EXISTS idx_playlist_tracks_mf ON playlist_tracks(media_file_id);
+      CREATE INDEX IF NOT EXISTS idx_media_file_folder ON media_file(folder);
     `);
   } catch (err) {}
 

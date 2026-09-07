@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="romanceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b20a2c" />
+      <stop offset="100%" stop-color="#ea698b" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#romanceGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(255, 255, 255, 0.12)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="2"/>
+  <!-- Heart Icon -->
+  <path d="M150 142 L137 129 C122 115 116 106 116 95 C116 83 125 74 137 74 C144 74 150 78 150 78 C150 78 156 74 163 74 C175 74 184 83 184 95 C184 106 178 115 163 129 Z" fill="#ffffff" opacity="0.95"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#ffb8b8" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#ffffff">Tamil Romance</text>
+</svg>

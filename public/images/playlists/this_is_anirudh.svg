@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="aniGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e2f" />
+      <stop offset="100%" stop-color="#3d1e6d" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#aniGrad)"/>
+  <circle cx="150" cy="115" r="70" fill="#2a2a40" stroke="#79529cf0" stroke-width="4"/>
+  <text x="150" y="130" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="48" font-weight="900" fill="#1ed760" text-anchor="middle">AR</text>
+  <rect x="25" y="200" width="250" height="70" rx="6" fill="#000000" opacity="0.85"/>
+  <text x="40" y="230" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#ffffff" letter-spacing="2">THIS IS</text>
+  <text x="40" y="255" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" fill="#ffffff">Anirudh Ravichander</text>
+</svg>

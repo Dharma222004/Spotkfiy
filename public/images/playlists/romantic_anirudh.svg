@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="aniRomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#47126b" />
+      <stop offset="50%" stop-color="#973aa8" />
+      <stop offset="100%" stop-color="#ea698b" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#aniRomGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(255, 255, 255, 0.12)" stroke="rgba(255, 255, 255, 0.25)" stroke-width="2"/>
+  <!-- Musical note + heart -->
+  <path d="M140 134 C134 134 128 128 128 122 C128 116 134 110 140 110 C146 110 152 116 152 122 L152 92 L172 84 L172 104 L152 112" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="140" cy="122" r="8" fill="#ffffff"/>
+  <circle cx="166" cy="108" r="6" fill="#ffffff"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#ea698b" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#ffffff">Romantic Anirudh</text>
+</svg>

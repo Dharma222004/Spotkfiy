@@ -43,15 +43,15 @@ router.post('/', authMiddleware, (req, res) => {
 // Get playlist detail with songs
 router.get('/:id', authMiddleware, (req, res) => {
   const userId = req.user ? req.user.id : 'admin-user-id';
-  const playlist = db.prepare('SELECT * FROM playlist WHERE id = ?').get(req.params.id);
+  const playlist = db.prepare('SELECT * FROM playlist WHERE id = ? OR LOWER(name) = LOWER(?)').get(req.params.id, req.params.id);
 
   if (!playlist) {
     return res.status(404).json({ error: { code: 'PLAYLIST_NOT_FOUND', message: 'Playlist not found' } });
   }
 
   const tracks = db.prepare(`
-    SELECT m.id, m.title, m.artist, m.album, m.duration, m.cover_image_url,
-      m.audio_url, m.cloudinary_public_id, m.genre, m.language, pt.id AS playlist_track_id,
+    SELECT m.id, m.title, m.artist, m.artists_json, m.album, m.movie, m.duration, m.cover_image_url,
+      m.audio_url, m.cloudinary_public_id, m.genre, m.language, m.folder, pt.id AS playlist_track_id,
       EXISTS(SELECT 1 FROM annotation a WHERE a.user_id = ? AND a.item_id = m.id AND a.starred = 1) AS is_liked
     FROM playlist_tracks pt
     JOIN media_file m ON pt.media_file_id = m.id

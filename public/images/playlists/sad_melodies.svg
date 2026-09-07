@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="sadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141e30" />
+      <stop offset="100%" stop-color="#243b55" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#sadGrad)"/>
+  <circle cx="150" cy="115" r="58" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2"/>
+  <!-- Cloud & Rain icon -->
+  <path d="M135 110 C135 100 144 92 154 92 C162 92 169 98 171 105 C173 105 174 105 175 105 C181 105 186 110 186 116 C186 122 181 127 175 127 L134 127 C127 127 122 122 122 115 C122 109 126 104 132 103 C132 103 133 103 135 104 Z" fill="#ffffff" opacity="0.95"/>
+  <line x1="138" y1="134" x2="134" y2="144" stroke="#a1c4fd" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="152" y1="134" x2="148" y2="144" stroke="#a1c4fd" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="166" y1="134" x2="162" y2="144" stroke="#a1c4fd" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="24" y="200" width="252" height="72" rx="8" fill="#000000" opacity="0.75"/>
+  <text x="38" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#a1c4fd" letter-spacing="3">SPOTKIFY PLAYLIST</text>
+  <text x="38" y="254" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#ffffff">Sad Melodies</text>
+</svg>

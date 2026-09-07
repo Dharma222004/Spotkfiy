@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <linearGradient id="bsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#000428" />
+      <stop offset="100%" stop-color="#004e92" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#bsGrad)"/>
+  <polygon points="150,55 168,110 225,110 178,145 196,200 150,165 104,200 122,145 75,110 132,110" fill="#00d2ff" opacity="0.85"/>
+  <text x="150" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">BLUE STAR</text>
+</svg>
