@@ -269,6 +269,15 @@ function initSchema() {
         VALUES ('sharu-user-id', 'sharu', 'Sharu', 'sharu@spotkify.local', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `).run(sharuHashed);
     }
+
+    const youUser = db.prepare("SELECT * FROM user WHERE user_name = 'you'").get();
+    if (!youUser) {
+      const youHashed = bcrypt.hashSync('you@123', salt);
+      db.prepare(`
+        INSERT INTO user (id, user_name, name, email, password, is_admin, created_at, updated_at)
+        VALUES ('you-user-id', 'you', 'You', 'you@spotkify.local', ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).run(youHashed);
+    }
   } catch (err) {
     console.warn('[DB] User seeding note:', err.message);
   }

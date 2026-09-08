@@ -211,11 +211,31 @@ body {
   position: relative;
 }
 
+.profile-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 998;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+  cursor: default;
+}
+
+.profile-backdrop.hidden {
+  display: none !important;
+}
+
 .profile-avatar-pill {
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1001;
 }
 
 .profile-avatar-circle {
@@ -2208,7 +2228,13 @@ body {
   display: none;
 }
 
-/* Hide Mobile Sections on Desktop by Default */
+/* Hide Mobile Sections & Mobile Flow on Desktop by Default */
+.mobile-home-flow {
+  display: none !important;
+}
+.desktop-home-flow {
+  display: block !important;
+}
 .spotify-mobile-section {
   display: none !important;
   margin: 16px 0 28px;
@@ -2920,6 +2946,60 @@ body {
   .profile-dropdown {
     right: 8px !important;
     top: 52px !important;
+  }
+  .desktop-home-flow {
+    display: none !important;
+  }
+  .mobile-home-flow {
+    display: block !important;
+  }
+  .mobile-shelf-section {
+    margin-bottom: 24px !important;
+  }
+  .mobile-cards-carousel {
+    display: flex !important;
+    gap: 14px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 4px 2px 14px !important;
+  }
+  .mobile-cards-carousel::-webkit-scrollbar {
+    display: none !important;
+  }
+  .mobile-cards-carousel .spotify-card {
+    flex: 0 0 148px !important;
+    width: 148px !important;
+    min-width: 148px !important;
+    max-width: 148px !important;
+    padding: 10px !important;
+    background-color: #181818 !important;
+    border-radius: 8px !important;
+  }
+  .mobile-cards-carousel .card-img-wrap {
+    margin-bottom: 8px !important;
+    border-radius: 6px !important;
+  }
+  .mobile-cards-carousel .card-title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    line-height: 1.25 !important;
+    margin-bottom: 3px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .mobile-cards-carousel .card-desc {
+    font-size: 12px !important;
+    color: #b3b3b3 !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .view-content#viewHome {
+    padding-bottom: 120px !important;
   }
   .spotify-mobile-section {
     display: block !important;
@@ -4456,20 +4536,31 @@ html.spotkify-unlocked .spotkify-login-gate {
   pointer-events: none !important;
 }
 
+html.spotkify-unlocked body.locked .spotify-global-topbar,
+html.spotkify-unlocked .spotify-global-topbar {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
 html.spotkify-unlocked body.locked .spotify-app,
 html.spotkify-unlocked .spotify-app {
+  display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
   filter: none !important;
 }
 
-body.locked .spotify-app {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  filter: blur(28px) brightness(0.2);
-  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+body.locked .spotify-global-topbar,
+body.locked .spotify-app,
+body.locked .mobile-nav-bar,
+body.locked .spotify-player-bar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 body.locked .spotkify-login-gate {
@@ -4486,7 +4577,7 @@ body.locked .spotkify-login-gate {
   align-items: center;
   justify-content: center;
   background-color: #000000;
-  background: radial-gradient(circle at 50% 18%, rgba(0, 245, 160, 0.15) 0%, rgba(29, 185, 84, 0.05) 35%, #000000 80%);
+  background: radial-gradient(circle at 50% 18%, rgba(0, 245, 160, 0.15) 0%, rgba(29, 185, 84, 0.05) 35%, #000000 80%), #000000;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -4864,5 +4955,41 @@ body.locked .spotkify-login-gate {
   }
   .artist-name-title {
     font-size: 2.5rem;
+  }
+}
+
+/* ==========================================================================
+   PLAYER LOADING / BUFFERING STATE (FIX-8)
+   Shows a pulsing ring on the play/pause buttons while audio is buffering
+   so the user knows the player is active, not frozen.
+   ========================================================================== */
+@keyframes spotkify-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(29, 185, 84, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(29, 185, 84, 0); }
+}
+
+button.loading,
+button.loading svg {
+  opacity: 0.6;
+}
+
+button.loading {
+  animation: spotkify-pulse-ring 1.2s ease-out infinite;
+  border-radius: 50%;
+  pointer-events: none; /* prevent double-click during buffer */
+}
+
+/* ==========================================================================
+   MOBILE SAFE AREA (notch / home-bar support)
+   ========================================================================== */
+.spotify-player-bar,
+.mobile-nav-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .spotify-player-bar {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 }

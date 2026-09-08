@@ -18,6 +18,62 @@
 
   // Audio Engine
   const audio = document.getElementById('spotifyAudioEngine');
+  if (audio) {
+    audio.preload = 'auto';
+  }
+
+  // ==========================================================================
+  // SPOTKIFY HIGH-SPEED AUDIO PRELOADER & QUEUE PREFETCH ENGINE
+  // Uses direct Cloudinary HTTPS MP3 streaming URLs to ensure 100% compatibility
+  // with mobile background playback, lock-screen MediaSession, and OS media daemons.
+  // Pre-warms upcoming connections natively without heavy in-memory blobs.
+  // ==========================================================================
+  const audioPreloader = (() => {
+    // Return direct Cloudinary stream URL to ensure 100% compatibility
+    // with mobile background playback, lock-screen MediaSession, and OS media daemons.
+    function getPlaybackUrl(song) {
+      if (!song) return null;
+      return song.audio_url || song.audioUrl || null;
+    }
+
+    // Pre-warm upcoming track connections natively via link prefetch
+    function preloadTrack(song) {
+      if (!song) return;
+      const directUrl = song.audio_url || song.audioUrl;
+      if (!directUrl) return;
+      try {
+        const existing = document.querySelector(`link[rel="prefetch"][href="${directUrl}"]`);
+        if (!existing) {
+          const link = document.createElement('link');
+          link.rel = 'prefetch';
+          link.href = directUrl;
+          link.as = 'audio';
+          document.head.appendChild(link);
+        }
+      } catch (_) {}
+    }
+
+    // Pre-warms upcoming songs in the current queue sequentially
+    function preloadUpcoming(currentIndex, playlist, count = 5) {
+      if (!playlist || playlist.length <= 1 || currentIndex < 0) return;
+      try {
+        const len = playlist.length;
+        for (let i = 1; i <= Math.min(count, len - 1); i++) {
+          const nextIdx = (currentIndex + i) % len;
+          if (playlist[nextIdx]) {
+            preloadTrack(playlist[nextIdx]);
+          }
+        }
+      } catch (_) {}
+    }
+
+    return {
+      getPlaybackUrl,
+      preloadTrack,
+      preloadUpcoming,
+      getCacheCount: () => 0
+    };
+  })();
 
   // DOM Navigation & Views
   const viewHome = document.getElementById('viewHome');
@@ -60,6 +116,74 @@
   const mobilePlayerTopText = document.getElementById('mobilePlayerTopText') || mobilePlayerTopLabel;
   const mobileMiniPrevBtn = document.getElementById('mobileMiniPrevBtn');
   const mobileMiniPlayBtn = document.getElementById('mobileMiniPlayBtn');
+
+  // Mobile Home Flow DOM Elements
+  const mobileAllSongsCarousel = document.getElementById('mobileAllSongsCarousel');
+  const mobileBtnShowAllSongs = document.getElementById('mobileBtnShowAllSongs');
+  const mobilePlaylistsCarousel = document.getElementById('mobilePlaylistsCarousel');
+  const mobileBtnShowAllPlaylists = document.getElementById('mobileBtnShowAllPlaylists');
+  const mobileDirectorsCarousel = document.getElementById('mobileDirectorsCarousel');
+  const mobileBtnShowAllDirectors = document.getElementById('mobileBtnShowAllDirectors');
+  const mobileArtistsShelf = document.getElementById('mobileArtistsShelf');
+  const mobileTrendingCarousel = document.getElementById('mobileTrendingCarousel');
+  const mobileBtnShowAllTrending = document.getElementById('mobileBtnShowAllTrending');
+
+  const CLOUDINARY_PLAYLISTS_ORDER = [
+    'Happy Vibes Tamil',
+    'Latest Dance Tamil',
+    'Long Drive Tamil',
+    'Romantic Anirudh',
+    'Tamil Romance',
+    'Thalapathy Vijay Hits',
+    'Trending Now Tamil'
+  ];
+
+  const KNOWN_MUSIC_DIRECTORS = [
+    { name: 'A.R. Rahman', aliases: ['a.r. rahman', 'a. r. rahman', 'ar rahman', 'rahman'], cover: 'https://upload.wikimedia.org/wikipedia/commons/1/10/AR_Rahman_at_Premier_Futsal_Press_Meet_%28cropped%29.jpg' },
+    { name: 'Anirudh Ravichander', aliases: ['anirudh ravichander', 'anirudh'], cover: '/images/artists/anirudh.jpg' },
+    { name: 'D. Imman', aliases: ['d. imman', 'd imman', 'imman'], cover: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Darbuka Siva', aliases: ['darbuka siva'], cover: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Deva', aliases: ['deva', 'thenisai thendral deva'], cover: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Hiphop_Tamizha_Aambala_audio_launch_%28cropped%29.jpg' },
+    { name: 'Devi Sri Prasad', aliases: ['devi sri prasad', 'dsp'], cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Dhibu Ninan Thomas', aliases: ['dhibu ninan thomas'], cover: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&auto=format&fit=crop&q=80' },
+    { name: 'G. V. Prakash Kumar', aliases: ['g. v. prakash kumar', 'g. v. prakash', 'g.v. prakash', 'gv prakash'], cover: '/images/artists/gvprakash.jpg' },
+    { name: 'Ghibran', aliases: ['ghibran'], cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Govind Vasantha', aliases: ['govind vasantha'], cover: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Harris Jayaraj', aliases: ['harris jayaraj'], cover: 'https://upload.wikimedia.org/wikipedia/commons/8/82/Harris_Jayaraj_at_Gethu_Audio_Launch_%28cropped%29.jpg' },
+    { name: 'Hiphop Tamizha', aliases: ['hiphop tamizha', 'hiphop thamizha'], cover: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Hiphop_Tamizha_Aambala_audio_launch_%28cropped%29.jpg' },
+    { name: 'Ilaiyaraaja', aliases: ['ilaiyaraaja', 'ilayaraja'], cover: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Ilaiyaraaja_at_Merku_Thodarchi_Malai_Press_Meet_%28cropped%29.jpg' },
+    { name: 'Leon James', aliases: ['leon james'], cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Sam C.S.', aliases: ['sam c.s.', 'sam cs'], cover: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Santhosh Narayanan', aliases: ['santhosh narayanan'], cover: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Santhosh_Narayanan_-_WIki_profile.jpg' },
+    { name: 'Sean Roldan', aliases: ['sean roldan'], cover: 'https://upload.wikimedia.org/wikipedia/commons/6/63/Sean_Roldan.jpg' },
+    { name: 'Siddhu Kumar', aliases: ['siddhu kumar'], cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Stephen Zechariah', aliases: ['stephen zechariah'], cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Vidyasagar', aliases: ['vidyasagar'], cover: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80' },
+    { name: 'Vivek - Mervin', aliases: ['vivek - mervin', 'vivek-mervin'], cover: '/images/artists/vivek.jpg' },
+    { name: 'Yuvan Shankar Raja', aliases: ['yuvan shankar raja', 'yuvan'], cover: 'https://upload.wikimedia.org/wikipedia/commons/b/b6/Yuvan_Shankar_Raja_exclusive_HQ_Photos_Silverscreen.jpg' }
+  ];
+
+  function getAlphabeticalSongs() {
+    return [...allSongs].sort((a, b) => {
+      const titleA = (a.title || '').trim();
+      const titleB = (b.title || '').trim();
+      return titleA.localeCompare(titleB, undefined, { sensitivity: 'base', numeric: true });
+    });
+  }
+
+  function getDirectorSongs(director, songs) {
+    const aliases = director.aliases || [director.name.toLowerCase()];
+    return songs.filter(s => {
+      const artStr = (s.artist || '').toLowerCase();
+      const albumArt = (s.album_artist || '').toLowerCase();
+      let artArr = [];
+      if (Array.isArray(s.artists)) artArr = s.artists.map(a => a.toLowerCase());
+      else {
+        try { artArr = JSON.parse(s.artists_json || '[]').map(a => a.toLowerCase()); } catch(e) {}
+      }
+      return aliases.some(alias => artStr.includes(alias) || albumArt.includes(alias) || artArr.some(a => a.includes(alias)));
+    });
+  }
   const mobileMiniNextBtn = document.getElementById('mobileMiniNextBtn');
   const mobileBarPlaySvg = document.getElementById('mobileBarPlaySvg');
   const mobileBarPauseSvg = document.getElementById('mobileBarPauseSvg');
@@ -169,6 +293,7 @@
   let currentRightPanelTab = null;
   let isSeeking = false;
   let isVolDragging = false;
+  let _lastMsUpdate = 0; // Throttle for MediaSession position updates in timeupdate
 
   const btnToggleNowPlaying = document.getElementById('btnToggleNowPlaying');
   const btnToggleQueue = document.getElementById('btnToggleQueue');
@@ -302,18 +427,19 @@
     if (!('mediaSession' in navigator)) return;
     const handlers = [
       ['play', () => {
-        if (audio.paused) {
-          audio.play().then(() => setPlayingState(true)).catch(console.error);
-        }
+        console.log('[MediaSession] Play action triggered from lockscreen / headset');
+        resumePlayback();
       }],
       ['pause', () => {
-        audio.pause();
-        setPlayingState(false);
+        console.log('[MediaSession] Pause action triggered from lockscreen / headset');
+        pausePlayback();
       }],
       ['previoustrack', () => {
+        console.log('[MediaSession] Previous track action triggered');
         playPrevTrack();
       }],
       ['nexttrack', () => {
+        console.log('[MediaSession] Next track action triggered');
         playNextTrack();
       }],
       ['seekto', (details) => {
@@ -333,9 +459,9 @@
         updateMediaSessionPlaybackState();
       }],
       ['stop', () => {
-        audio.pause();
+        console.log('[MediaSession] Stop action triggered');
+        pausePlayback();
         audio.currentTime = 0;
-        setPlayingState(false);
       }]
     ];
 
@@ -450,61 +576,198 @@
   }
 
   // ==========================================================================
+  // SHARED SONG CATALOG STORE (SINGLETON)
+  // Provides a single, unified source of truth for all components (Player, Home,
+  // Search, Library, Playlists) with in-flight promise deduplication and memory caching.
+  // Prevents redundant /api/songs?limit=1000 requests during normal app usage.
+  // ==========================================================================
+  const SongCatalogStore = (() => {
+    let catalog = [];
+    let catalogVersion = null;
+    let catalogLastUpdated = null;
+    let inFlightFetchPromise = null;
+    let isCatalogLoaded = false;
+    let lastFetchedTime = 0;
+
+    async function fetchCatalogFromServer(force = false) {
+      try {
+        const headers = {};
+        if (catalogVersion && !force) {
+          headers['If-None-Match'] = `"${catalogVersion}"`;
+        }
+        const res = await fetch('/api/songs?limit=1000', { headers });
+        if (res.status === 304 && catalog.length > 0) {
+          console.log('[CatalogStore] 304 Not Modified - Shared catalog is fresh.');
+          lastFetchedTime = Date.now();
+          return catalog;
+        }
+        if (!res.ok) {
+          throw new Error(`Catalog fetch failed with HTTP ${res.status}`);
+        }
+        const json = await res.json();
+        const songs = (json && json.data) || [];
+        if (songs.length > 0 || !isCatalogLoaded) {
+          catalog = songs;
+          isCatalogLoaded = true;
+          allSongs = catalog;
+          lastFetchedTime = Date.now();
+
+          // Extract ETag or version
+          const etag = res.headers.get('ETag');
+          if (etag) {
+            catalogVersion = etag.replace(/"/g, '');
+          }
+        }
+        return catalog;
+      } finally {
+        inFlightFetchPromise = null;
+      }
+    }
+
+    async function getSongs(forceRefresh = false) {
+      if (!forceRefresh && isCatalogLoaded && catalog.length > 0) {
+        return catalog;
+      }
+      if (inFlightFetchPromise) {
+        return inFlightFetchPromise;
+      }
+      inFlightFetchPromise = fetchCatalogFromServer(forceRefresh);
+      return inFlightFetchPromise;
+    }
+
+    async function checkVersionAndSyncIfNeeded() {
+      // Lightweight check (<1ms SQLite check, ~50 bytes JSON response)
+      try {
+        const res = await fetch('/api/songs/version');
+        if (!res.ok) return false;
+        const json = await res.json();
+        const vData = json && json.data;
+        if (!vData) return false;
+
+        const serverCount = vData.count;
+        const serverVersion = vData.version;
+        const serverLastUpdated = vData.lastUpdated;
+
+        const countChanged = serverCount !== catalog.length;
+        const versionChanged = catalogVersion && serverVersion && catalogVersion !== serverVersion;
+        const timeChanged = catalogLastUpdated && serverLastUpdated && catalogLastUpdated !== serverLastUpdated;
+
+        if (!isCatalogLoaded || countChanged || versionChanged || timeChanged) {
+          console.log(`[CatalogStore] Catalog change detected: ${catalog.length} -> ${serverCount} songs. Refreshing...`);
+          catalogVersion = serverVersion;
+          catalogLastUpdated = serverLastUpdated;
+          const updatedSongs = await getSongs(true);
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.warn('[CatalogStore] Version check warning:', err.message);
+        return false;
+      }
+    }
+
+    function getCachedSongs() {
+      return catalog;
+    }
+
+    function isLoaded() {
+      return isCatalogLoaded;
+    }
+
+    return {
+      getSongs,
+      checkVersionAndSyncIfNeeded,
+      getCachedSongs,
+      isLoaded
+    };
+  })();
+  window.spotkifyCatalog = SongCatalogStore;
+
+  // ==========================================================================
   // API LOADERS
   // ==========================================================================
   let isAppInitialized = false;
+  let isPlayerBootstrapped = false;
+  let initAppPromise = null;
 
-  async function initAppData() {
-    if (isAppInitialized) return;
-    isAppInitialized = true;
-    if (greetingTitle) updateGreeting();
-    try {
-      // 1. Fetch Home Feed
-      const homeRes = await fetch('/api/home');
-      const homeJson = await homeRes.json();
-      homeData = (homeJson && homeJson.data) || {};
+  async function initAppData(forceRefresh = false) {
+    if (!forceRefresh && isAppInitialized) return;
+    if (initAppPromise) return initAppPromise;
 
-      // 2. Fetch All Songs (Dynamically derived from Cloudinary & Metadata)
-      const songsRes = await fetch('/api/songs?limit=1000');
-      const songsJson = await songsRes.json();
-      allSongs = (songsJson && songsJson.data) || [];
-      if (libAllTracksCount) libAllTracksCount.textContent = allSongs.length;
+    initAppPromise = (async () => {
+      if (greetingTitle) updateGreeting();
+      try {
+        // 1. Fetch Home Feed & Songs concurrently with in-flight deduplication
+        const [homeRes, songs] = await Promise.all([
+          fetch('/api/home').then(r => r.json()).catch(() => null),
+          SongCatalogStore.getSongs(forceRefresh)
+        ]);
 
-      currentPlaylist = [...allSongs];
-
-      if (allSongs.length > 0) {
-        const initialSong = allSongs.find(s => (s.title || '').toLowerCase().includes('enna solla')) ||
-                            allSongs.find(s => (s.title || '').toLowerCase().includes('othaiyadi')) ||
-                            allSongs[0];
-        const idx = allSongs.indexOf(initialSong);
-        currentTrackIndex = idx !== -1 ? idx : 0;
-        try {
-          loadTrackIntoPlayerBar(initialSong);
-        } catch (loadErr) {
-          console.warn('Initial track load warning:', loadErr);
+        if (homeRes && homeRes.data) {
+          homeData = homeRes.data;
         }
-      }
-      try {
-        updateVolumeUI(currentVolume);
-      } catch (volErr) {
-        console.warn('Volume UI warning:', volErr);
-      }
+        allSongs = songs || [];
+        if (libAllTracksCount) libAllTracksCount.textContent = allSongs.length;
 
-      try {
-        renderHomeView();
-      } catch (homeErr) {
-        console.error('Render home view error:', homeErr);
-      }
+        // 2. Safe Player Bootstrap (ONLY RUNS ONCE ON INITIAL BOOTSTRAP)
+        if (!isPlayerBootstrapped) {
+          isPlayerBootstrapped = true;
+          currentPlaylist = [...allSongs];
 
-      try {
-        renderSidebarPlaylists();
-      } catch (sideErr) {
-        console.warn('Sidebar playlists warning:', sideErr);
+          if (allSongs.length > 0) {
+            // FIX-1: Pick a random song on every initial page open so the default is never the same.
+            const randomIdx = Math.floor(Math.random() * allSongs.length);
+            const initialSong = allSongs[randomIdx];
+            currentTrackIndex = randomIdx;
+            try {
+              loadTrackIntoPlayerBar(initialSong);
+            } catch (loadErr) {
+              console.warn('Initial track load warning:', loadErr);
+            }
+
+            // Immediately pre-cache the initial song and next 5 upcoming songs
+            audioPreloader.preloadTrack(initialSong, 'high');
+            audioPreloader.preloadUpcoming(currentTrackIndex, currentPlaylist, 5);
+          }
+          try {
+            updateVolumeUI(currentVolume);
+          } catch (volErr) {
+            console.warn('Volume UI warning:', volErr);
+          }
+        } else {
+          // Non-destructive update: Maintain currently active track & playlist without resetting playback!
+          const activeTrack = currentPlaylist[currentTrackIndex] || (audio && audio.src ? allSongs.find(s => s.audio_url === audio.src) : null);
+          if (activeTrack) {
+            const newIdx = allSongs.findIndex(s => s.id === activeTrack.id);
+            if (newIdx !== -1) {
+              currentTrackIndex = newIdx;
+            }
+          }
+          currentPlaylist = [...allSongs];
+        }
+
+        try {
+          renderHomeView();
+        } catch (homeErr) {
+          console.error('Render home view error:', homeErr);
+        }
+
+        try {
+          renderSidebarPlaylists();
+        } catch (sideErr) {
+          console.warn('Sidebar playlists warning:', sideErr);
+        }
+
+        isAppInitialized = true;
+      } catch (err) {
+        console.error('Failed to load initial Spotify data:', err);
+        showToast(`Error loading songs: ${err.message || 'Check server connection'}`);
+      } finally {
+        initAppPromise = null;
       }
-    } catch (err) {
-      console.error('Failed to load initial Spotify data:', err);
-      showToast(`Error loading songs: ${err.message || 'Check server connection'}`);
-    }
+    })();
+
+    return initAppPromise;
   }
   window.spotkifyInitApp = initAppData;
 
@@ -516,57 +779,142 @@
       ? homeData.quickPicks.slice(0, 6)
       : allSongs.slice(0, 6);
 
-    // 0. Render Mobile "Start listening" Section (Matching Spotify mobile layout!)
-    if (startListeningList) {
-      const featuredKeywords = ['othaiyadi', 'oorum blood', 'thangamey', 'bae', 'kannamma', 'usuru', 'yennai maatrum', 'railin', 'pottala', 'mogathirai', 'maya nadhi', 'aval'];
-      const featured = [];
-      for (const kw of featuredKeywords) {
-        const found = allSongs.find(s => (s.title || '').toLowerCase().includes(kw));
-        if (found && !featured.some(f => f.id === found.id)) featured.push(found);
-      }
-      for (const s of allSongs) {
-        if (featured.length >= 12) break;
-        if (!featured.some(f => f.id === s.id)) featured.push(s);
-      }
+    // ========================================================================
+    // MOBILE HOME FLOW: EXACT REQUIRED 4-TIER HIERARCHY
+    // 1. ALL SONGS (Alphabetical by title, Show all)
+    // 2. CLOUDINARY PLAYLISTS / FOLDERS (Exact 7 playlists)
+    // 3. MUSIC DIRECTOR-WISE PLAYLISTS (Deterministic alphabetical composers)
+    // 4. OTHER EXISTING HOME SECTIONS (Popular Artists, Trending)
+    // ========================================================================
 
-      const activeSongId = (currentPlaylist[currentTrackIndex] && currentPlaylist[currentTrackIndex].id) || (allSongs[0] && allSongs[0].id);
+    // 1. ALL SONGS (FIRST SECTION ON MOBILE)
+    const alphabeticalSongs = getAlphabeticalSongs();
+    if (mobileAllSongsCarousel) {
+      const initialCards = alphabeticalSongs.slice(0, 16);
+      mobileAllSongsCarousel.innerHTML = initialCards.map(song => createSpotifyCardHtml(song)).join('');
+      attachCardListeners(mobileAllSongsCarousel, alphabeticalSongs);
+    }
+    if (mobileBtnShowAllSongs) {
+      mobileBtnShowAllSongs.onclick = () => {
+        const sorted = getAlphabeticalSongs();
+        openPlaylistView(
+          'All Songs',
+          `Complete library with ${sorted.length} songs in alphabetical order`,
+          sorted[0] ? sorted[0].cover_image_url : null,
+          sorted
+        );
+      };
+    }
 
-      startListeningList.innerHTML = featured.map(song => {
-        const isCurrent = song.id === activeSongId;
-        const prefix = isCurrent && isPlaying ? '<span class="playing-dot-prefix" style="color:#1ed760; font-weight:800; margin-right:4px;">...</span>' : '';
-        return `
-          <div class="mobile-track-row" data-song-id="${song.id}">
-            <img class="mobile-track-cover" src="${song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'}" alt="${song.title}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100'">
-            <div class="mobile-track-info">
-              <span class="mobile-track-title ${isCurrent ? 'active' : ''}">${prefix}${song.title}</span>
-              <span class="mobile-track-artist">${song.artist}</span>
-            </div>
-            <button class="mobile-track-more-btn" title="Options" data-song-id="${song.id}">⋮</button>
+    // 2. CLOUDINARY PLAYLISTS / FOLDERS (SECOND SECTION)
+    if (mobilePlaylistsCarousel) {
+      const orderedPlaylists = CLOUDINARY_PLAYLISTS_ORDER.map(name => {
+        const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_');
+        const folderTracks = allSongs.filter(s => (s.folder || '').toLowerCase() === name.toLowerCase());
+        const plDetail = (homeData && homeData.featuredPlaylists)
+          ? homeData.featuredPlaylists.find(p => p.name.toLowerCase() === name.toLowerCase())
+          : null;
+        return {
+          id: plDetail?.id || `pl-${slug}`,
+          name: name,
+          song_count: folderTracks.length || plDetail?.song_count || 0,
+          cover: plDetail?.uploaded_image || `/images/playlists/${slug}.svg`,
+          tracks: folderTracks
+        };
+      });
+
+      mobilePlaylistsCarousel.innerHTML = orderedPlaylists.map(pl => `
+        <div class="spotify-card playlist-card" data-playlist-id="${pl.id}" data-folder="${pl.name}">
+          <div class="card-img-wrap">
+            <img class="card-img" src="${pl.cover}" alt="${pl.name}" onerror="this.onerror=null; this.src='/images/playlists/long_drive_tamil.svg'">
+            <button class="card-play-btn" title="Play ${pl.name}">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
           </div>
-        `;
-      }).join('');
+          <span class="card-title" title="${pl.name}">${pl.name}</span>
+          <span class="card-desc">Playlist • ${pl.song_count} songs</span>
+        </div>
+      `).join('');
 
-      startListeningList.querySelectorAll('.mobile-track-row').forEach(row => {
-        row.addEventListener('click', (e) => {
-          const id = row.getAttribute('data-song-id');
-          const song = allSongs.find(s => s.id === id);
-          if (e.target.closest('.mobile-track-more-btn')) {
-            e.stopPropagation();
-            if (song) openTrackContextSheet(song);
-            return;
-          }
-          playTrackById(id, featured.concat(allSongs.filter(s => !featured.some(f => f.id === s.id))));
+      mobilePlaylistsCarousel.querySelectorAll('.playlist-card').forEach(card => {
+        card.addEventListener('click', async (e) => {
+          const folderName = card.getAttribute('data-folder');
+          const plId = card.getAttribute('data-playlist-id');
+          await openFolderPlaylist(folderName, plId);
         });
       });
     }
 
-    // 0.1 Render Mobile "Your favourite artists" Circular Shelf (Matching Spotify mobile layout!)
-    if (favouriteArtistsShelf) {
+    if (mobileBtnShowAllPlaylists) {
+      mobileBtnShowAllPlaylists.onclick = () => {
+        openPlaylistView('Cloudinary Master Collection', `Original master audio recordings (${allSongs.length} tracks)`, allSongs[0]?.cover_image_url, allSongs);
+      };
+    }
+
+    // 3. MUSIC DIRECTOR-WISE PLAYLISTS (THIRD SECTION)
+    if (mobileDirectorsCarousel) {
+      const directorsWithSongs = KNOWN_MUSIC_DIRECTORS.map(dir => {
+        const songs = getDirectorSongs(dir, allSongs);
+        return {
+          ...dir,
+          songs,
+          count: songs.length
+        };
+      }).filter(d => d.count > 0);
+
+      mobileDirectorsCarousel.innerHTML = directorsWithSongs.map(dir => `
+        <div class="spotify-card director-card" data-director="${dir.name}">
+          <div class="card-img-wrap">
+            <img class="card-img" src="${dir.cover || (dir.songs[0] && dir.songs[0].cover_image_url) || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'}" alt="${dir.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300'">
+            <button class="card-play-btn" title="Play ${dir.name}">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+          <span class="card-title" title="${dir.name}">${dir.name}</span>
+          <span class="card-desc">Composer • ${dir.count} songs</span>
+        </div>
+      `).join('');
+
+      mobileDirectorsCarousel.querySelectorAll('.director-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const dirName = card.getAttribute('data-director');
+          const dirObj = directorsWithSongs.find(d => d.name === dirName);
+          if (dirObj && dirObj.songs.length > 0) {
+            openPlaylistView(
+              dirObj.name,
+              `Original compositions and hits by ${dirObj.name} • ${dirObj.songs.length} songs`,
+              dirObj.cover || dirObj.songs[0]?.cover_image_url,
+              dirObj.songs
+            );
+          }
+        });
+      });
+    }
+
+    if (mobileBtnShowAllDirectors) {
+      mobileBtnShowAllDirectors.onclick = () => {
+        const allDirectorSongs = [];
+        const seen = new Set();
+        KNOWN_MUSIC_DIRECTORS.forEach(d => {
+          const sList = getDirectorSongs(d, allSongs);
+          sList.forEach(s => {
+            if (!seen.has(s.id)) {
+              seen.add(s.id);
+              allDirectorSongs.push(s);
+            }
+          });
+        });
+        openPlaylistView('Music Directors Collection', `Original soundtracks & compositions by legendary music directors (${allDirectorSongs.length} songs)`, '/images/artists/anirudh.jpg', allDirectorSongs);
+      };
+    }
+
+    // 4. OTHER EXISTING HOME SECTIONS (Popular Artists & Trending)
+    if (mobileArtistsShelf) {
       const allArtists = (homeData && homeData.popularArtists && homeData.popularArtists.length > 0)
         ? homeData.popularArtists
         : [];
       
-      const priorityOrder = ['Sai Abhyankkar', 'Vivek', 'Anirudh Ravichander', 'Sid Sriram', 'Santhosh Narayanan', 'Yuvan Shankar Raja', 'Pradeep Kumar', 'A.R. Rahman', 'Dhanush', 'Shreya Ghoshal', 'G. V. Prakash', 'Harris Jayaraj', 'Ilaiyaraaja'];
+      const priorityOrder = ['Anirudh Ravichander', 'A.R. Rahman', 'Yuvan Shankar Raja', 'Harris Jayaraj', 'Sid Sriram', 'Santhosh Narayanan', 'G. V. Prakash', 'Pradeep Kumar', 'Sai Abhyankkar', 'Vivek', 'Dhanush', 'Shreya Ghoshal', 'Ilaiyaraaja'];
       const favList = [];
       for (const p of priorityOrder) {
         const found = allArtists.find(a => a.name.toLowerCase() === p.toLowerCase() || a.name.toLowerCase().includes(p.toLowerCase()));
@@ -578,19 +926,34 @@
         if (!favList.some(fa => fa.name === a.name)) favList.push(a);
       }
 
-      favouriteArtistsShelf.innerHTML = favList.slice(0, 12).map(art => `
+      mobileArtistsShelf.innerHTML = favList.slice(0, 12).map(art => `
         <div class="favourite-artist-card" data-slug="${art.slug || art.name}" data-artist="${art.name}">
           <img class="favourite-artist-img" src="${art.large_image_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'}" alt="${art.name}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300'">
           <span class="favourite-artist-name">${art.name}</span>
         </div>
       `).join('');
 
-      favouriteArtistsShelf.querySelectorAll('.favourite-artist-card').forEach(card => {
+      mobileArtistsShelf.querySelectorAll('.favourite-artist-card').forEach(card => {
         card.addEventListener('click', () => {
           const slug = card.getAttribute('data-slug') || card.getAttribute('data-artist');
           openArtistView(slug);
         });
       });
+    }
+
+    if (mobileTrendingCarousel) {
+      const trending = (homeData && homeData.trending && homeData.trending.length > 0)
+        ? homeData.trending
+        : allSongs.slice(0, 8);
+
+      mobileTrendingCarousel.innerHTML = trending.map(song => createSpotifyCardHtml(song)).join('');
+      attachCardListeners(mobileTrendingCarousel, trending);
+    }
+
+    if (mobileBtnShowAllTrending) {
+      mobileBtnShowAllTrending.onclick = () => {
+        openPlaylistView('Trending Master Hits', `Trending master recordings (${allSongs.length} songs available)`, allSongs[0]?.cover_image_url, allSongs);
+      };
     }
 
     // 1. Quick Picks Grid (6 items matching Image 1)
@@ -1303,13 +1666,16 @@
   });
 
   // ==========================================================================
-  // PLAYBACK LOGIC & AUDIO STREAMING
+  // PLAYBACK LOGIC & AUDIO STREAMING ENGINE
   // ==========================================================================
-  function loadTrackIntoPlayerBar(song) {
-    if (!song) return;
-    currentSong = song;
+  let _isTransitioning = false;
+  let _lastEndedTrackId = null;
+  let _lastEndedTimestamp = 0;
 
-    // Update Bottom Player UI
+  function updateAllPlayerUI(song) {
+    if (!song) return;
+
+    // 1. Update Bottom Player UI
     if (barTitle) barTitle.textContent = song.title || '';
     if (barArtist) {
       barArtist.innerHTML = renderArtistLinksHtml(song);
@@ -1319,13 +1685,7 @@
     if (barHeartBtn) barHeartBtn.classList.toggle('liked', Boolean(song.is_liked));
     if (barTotalTime) barTotalTime.textContent = formatDuration(song.duration);
 
-    // If audio element is empty or points to page, pre-assign song's direct audio stream
-    const directUrl = song.audio_url || song.audioUrl;
-    if (audio && directUrl && (!audio.src || audio.src === '' || audio.src === window.location.href)) {
-      audio.src = directUrl;
-    }
-
-    // Update Right Panel UI (Image 1: Now Playing View)
+    // 2. Update Right Panel UI (Now Playing View)
     if (rightTrackName) rightTrackName.textContent = song.title || '';
     if (rightArtistName) {
       rightArtistName.innerHTML = renderArtistLinksHtml(song);
@@ -1352,13 +1712,13 @@
       };
     }
 
-    // Update Fullscreen UI (1:1 Spotify Mobile Now Playing - Image 2)
+    // 3. Update Fullscreen UI
     if (fsTrackTitle) fsTrackTitle.textContent = song.title || '';
     if (fsArtistName) fsArtistName.textContent = song.artist || '';
-    if (fsHeaderContextSub) fsHeaderContextSub.textContent = 'Playing from Search';
+    if (fsHeaderContextSub) fsHeaderContextSub.textContent = 'Playing from Spotkify';
     if (fsHeaderPlaylistName) {
-      const searchKey = song.movie || song.title || 'neelothi';
-      fsHeaderPlaylistName.textContent = `"${searchKey.toLowerCase()}" in Search`;
+      const searchKey = song.movie || song.title || 'Spotkify';
+      fsHeaderPlaylistName.textContent = `"${searchKey.toLowerCase()}"`;
     }
     const coverArt = song.cover_image_url || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
     if (fsCoverImg) fsCoverImg.src = coverArt;
@@ -1370,15 +1730,12 @@
       fsAddSvgCheck.classList.toggle('hidden', !Boolean(song.is_liked));
     }
 
-    // Dynamic Live Lyrics Synchronization (Image 2)
+    // 4. Dynamic Live Lyrics Synchronization
     const lyricsData = getLyricsForSong(song);
     if (fsFloatingLyric) fsFloatingLyric.textContent = lyricsData.floating;
     if (fsLyricsPeekText) fsLyricsPeekText.innerHTML = lyricsData.preview;
 
-    // Synchronize W3C MediaSession for Background Playback
-    updateMediaSession(song);
-
-    // Update Mobile Mini Player UI
+    // 5. Update Mobile Mini Player UI
     const topLabel = mobilePlayerTopText || mobilePlayerTopLabel;
     if (topLabel) {
       topLabel.textContent = `Similar to ${song.movie || song.album || 'the album you chose'}`;
@@ -1387,20 +1744,48 @@
       mobileAddSvgPlus.classList.toggle('hidden', Boolean(song.is_liked));
       mobileAddSvgCheck.classList.toggle('hidden', !Boolean(song.is_liked));
     }
-    document.querySelectorAll('.mobile-track-row').forEach(row => {
-      const isCurrent = row.getAttribute('data-song-id') === song.id;
-      const titleEl = row.querySelector('.mobile-track-title');
-      if (titleEl) {
-        titleEl.classList.toggle('active', isCurrent);
-        const existingPrefix = titleEl.querySelector('.playing-dot-prefix');
-        if (existingPrefix) existingPrefix.remove();
-        if (isCurrent && isPlaying) {
-          titleEl.insertAdjacentHTML('afterbegin', '<span class="playing-dot-prefix" style="color:#1ed760; font-weight:800; margin-right:4px;">...</span>');
-        }
+
+    // 6. Update Queue Next Row Preview
+    if (currentPlaylist && currentPlaylist.length > 0) {
+      const nextIdx = (currentTrackIndex + 1) % currentPlaylist.length;
+      const nextSong = currentPlaylist[nextIdx];
+      if (nextSong && nextQueueRow) {
+        nextQueueRow.innerHTML = `
+          <img class="row-thumb" src="${nextSong.cover_image_url || '/images/covers/kanaa.jpg'}" alt="${nextSong.title}">
+          <div class="row-text">
+            <span class="row-song-title">${nextSong.title}</span>
+            <span class="row-artist-name">${renderArtistLinksHtml(nextSong)}</span>
+          </div>
+        `;
+        attachArtistLinkListeners(nextQueueRow);
       }
-    });
+    }
 
     if (ambientMesh) setAmbientColor(song.title);
+
+    // 7. Refresh row highlighting in active views
+    if (currentRoute === 'playlist') {
+      renderTrackTableRows(currentPlaylist);
+    } else if (currentRoute === 'artist' && currentArtistSongs.length > 0) {
+      renderArtistTrackRows(currentArtistSongs);
+    }
+  }
+
+  // Pre-load track into UI on startup without playing (dynamic default song)
+  function loadTrackIntoPlayerBar(song) {
+    if (!song) return;
+    currentSong = song;
+
+    const directUrl = song.audio_url || song.audioUrl;
+    if (audio && directUrl) {
+      audio.dataset.currentSongId = song.id;
+      if (audio.src !== directUrl) {
+        audio.src = directUrl;
+      }
+    }
+
+    updateMediaSession(song);
+    updateAllPlayerUI(song);
   }
 
   function playTrackById(songId, playlistContext) {
@@ -1419,88 +1804,85 @@
     }
   }
 
+  // Central Authoritative Play Function
   function playTrackAtIndex(index) {
     if (index < 0 || index >= currentPlaylist.length) return;
 
+    _isTransitioning = true;
     currentTrackIndex = index;
     const song = currentPlaylist[index];
+    if (!song) {
+      _isTransitioning = false;
+      return;
+    }
     currentSong = song;
 
-    loadTrackIntoPlayerBar(song);
-
-    // Update Queue Next
-    const nextIdx = (index + 1) % currentPlaylist.length;
-    const nextSong = currentPlaylist[nextIdx];
-    if (nextSong && nextQueueRow) {
-      nextQueueRow.innerHTML = `
-        <img class="row-thumb" src="${nextSong.cover_image_url || '/images/covers/kanaa.jpg'}" alt="${nextSong.title}">
-        <div class="row-text">
-          <span class="row-song-title">${nextSong.title}</span>
-          <span class="row-artist-name">${renderArtistLinksHtml(nextSong)}</span>
-        </div>
-      `;
-      attachArtistLinkListeners(nextQueueRow);
+    const directStreamUrl = song.audio_url || song.audioUrl;
+    if (!directStreamUrl) {
+      console.error('[Player] No direct stream URL for track:', song.title);
+      _isTransitioning = false;
+      return;
     }
 
-    setAmbientColor(song.title);
+    console.log(`[Player] Playing: "${song.title}" (${index + 1}/${currentPlaylist.length})`);
 
-    const streamUrl = song.audio_url || song.audioUrl;
+    // 1. Assign direct Cloudinary stream URL synchronously
+    audio.dataset.currentSongId = song.id;
+    if (audio.src !== directStreamUrl) {
+      audio.src = directStreamUrl;
+    }
 
-    if (streamUrl) {
-      if (audio.src !== streamUrl) {
-        audio.src = streamUrl;
-      }
-      try {
-        const p = audio.play();
-        if (p !== undefined) {
-          p.then(() => {
-            setPlayingState(true);
-          }).catch(err => {
-            console.warn('Initial direct play note:', err);
-            fetch(`/api/songs/${song.id}/play`).then(r => r.json()).then(json => {
-              const freshUrl = (json && json.data && json.data.streamUrl) || streamUrl;
-              if (audio.src !== freshUrl) {
-                audio.src = freshUrl;
-              }
-              return audio.play();
-            }).then(() => {
-              setPlayingState(true);
-            }).catch(fallbackErr => {
-              console.warn('Audio playback note:', fallbackErr);
-              if (fallbackErr.name === 'NotAllowedError') {
-                showToast('Tap play to start audio');
-              }
-              setPlayingState(false);
-            });
-          });
-        }
-      } catch (err) {
-        console.error('Audio play exception:', err);
-        setPlayingState(false);
-      }
-    } else {
-      fetch(`/api/songs/${song.id}/play`).then(r => r.json()).then(json => {
-        const freshUrl = json && json.data && json.data.streamUrl;
-        if (freshUrl) {
-          audio.src = freshUrl;
-          return audio.play();
-        }
-      }).then(() => {
+    // 2. Synchronously update MediaSession for lock screen
+    updateMediaSession(song);
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'playing';
+    }
+
+    // 3. Synchronously trigger play() to preserve audio session in background / lockscreen
+    try {
+      const p = audio.play();
+      if (p !== undefined) {
+        p.then(() => {
+          _isTransitioning = false;
+          setPlayingState(true);
+          console.log(`[Player] Active stream confirmed: "${song.title}"`);
+        }).catch(err => {
+          _isTransitioning = false;
+          console.warn(`[Player] Play note for "${song.title}":`, err.name, err.message);
+          if (err.name === 'NotAllowedError') {
+            if (!document.hidden) {
+              showToast('Tap play to start audio');
+            }
+            setPlayingState(false);
+          } else if (err.name === 'AbortError') {
+            console.log('[Player] Play request interrupted by subsequent track transition');
+          } else {
+            setPlayingState(false);
+          }
+        });
+      } else {
+        _isTransitioning = false;
         setPlayingState(true);
-      }).catch(err => {
-        console.error('Audio play endpoint error:', err);
-        setPlayingState(false);
-      });
+      }
+    } catch (err) {
+      _isTransitioning = false;
+      console.error('[Player] Audio play exception:', err);
+      setPlayingState(false);
     }
 
-    // Refresh row highlighting in playlist or artist view if active
-    if (currentRoute === 'playlist') {
-      renderTrackTableRows(currentPlaylist);
-    } else if (currentRoute === 'artist' && currentArtistSongs.length > 0) {
-      renderArtistTrackRows(currentArtistSongs);
+    // 4. Update UI safely
+    try {
+      updateAllPlayerUI(song);
+    } catch (uiErr) {
+      console.warn('[Player] UI update warning:', uiErr);
     }
 
-    // Background scrobble analytics (non-blocking)
+    // 5. Pre-warm next tracks asynchronously
+    if (audioPreloader && audioPreloader.preloadUpcoming) {
+      audioPreloader.preloadUpcoming(currentTrackIndex, currentPlaylist, 5);
+    }
+
+    // 6. Record analytics asynchronously (non-blocking)
     try {
       fetch('/api/playback/record', {
         method: 'POST',
@@ -1563,6 +1945,38 @@
     }
   }
 
+  function resumePlayback() {
+    if (!currentSong) {
+      if (currentPlaylist.length > 0) {
+        playTrackAtIndex(0);
+      } else if (allSongs.length > 0) {
+        currentPlaylist = [...allSongs];
+        playTrackAtIndex(0);
+      }
+      return;
+    }
+
+    const directUrl = currentSong.audio_url || currentSong.audioUrl;
+    if (!audio.src || audio.src === '' || audio.src === window.location.href) {
+      audio.src = directUrl;
+    }
+
+    console.log(`[Player] Resuming playback: "${currentSong.title}"`);
+    audio.play().then(() => {
+      setPlayingState(true);
+    }).catch(err => {
+      console.warn('[Player] Resume error, re-triggering track:', err);
+      playTrackAtIndex(currentTrackIndex);
+    });
+  }
+
+  function pausePlayback() {
+    console.log(`[Player] Pausing playback: "${currentSong ? currentSong.title : 'Unknown'}"`);
+    _isTransitioning = false;
+    audio.pause();
+    setPlayingState(false);
+  }
+
   function togglePlayPause() {
     if (currentPlaylist.length === 0 && allSongs.length > 0) {
       currentPlaylist = [...allSongs];
@@ -1574,27 +1988,10 @@
       return;
     }
 
-    const song = currentPlaylist[currentTrackIndex];
-    const targetUrl = song ? (song.audio_url || song.audioUrl) : null;
-
-    const hasValidSrc = audio.src && audio.src !== '' && audio.src !== window.location.href;
-    const matchesCurrent = targetUrl ? audio.src.includes(targetUrl.split('?')[0]) : true;
-
-    if (!hasValidSrc || !matchesCurrent) {
-      playTrackAtIndex(currentTrackIndex);
-      return;
-    }
-
     if (audio.paused) {
-      audio.play()
-        .then(() => setPlayingState(true))
-        .catch(err => {
-          console.warn('Resume failed, reloading track:', err);
-          playTrackAtIndex(currentTrackIndex);
-        });
+      resumePlayback();
     } else {
-      audio.pause();
-      setPlayingState(false);
+      pausePlayback();
     }
 
     if (currentRoute === 'playlist') {
@@ -1604,40 +2001,84 @@
     }
   }
 
-  function playNextTrack() {
-    if (currentPlaylist.length === 0) {
-      if (allSongs.length > 0) currentPlaylist = [...allSongs];
+  function playNextTrack(isAutoAdvance = false) {
+    if (!currentPlaylist || currentPlaylist.length === 0) {
+      if (allSongs && allSongs.length > 0) currentPlaylist = [...allSongs];
       else return;
     }
+
+    let nextIdx;
     if (isShuffle) {
       let randIdx = Math.floor(Math.random() * currentPlaylist.length);
       if (currentPlaylist.length > 1 && randIdx === currentTrackIndex) {
         randIdx = (randIdx + 1) % currentPlaylist.length;
       }
-      playTrackAtIndex(randIdx);
+      nextIdx = randIdx;
     } else {
-      const nextIdx = (currentTrackIndex + 1) % currentPlaylist.length;
-      playTrackAtIndex(nextIdx);
+      nextIdx = (currentTrackIndex + 1) % currentPlaylist.length;
     }
+
+    const nextSong = currentPlaylist[nextIdx];
+    console.log(`[Player] Next song: "${nextSong ? nextSong.title : 'Unknown'}" (Index ${nextIdx + 1}/${currentPlaylist.length}, autoAdvance=${isAutoAdvance})`);
+    playTrackAtIndex(nextIdx);
   }
 
   function playPrevTrack() {
-    if (currentPlaylist.length === 0) {
-      if (allSongs.length > 0) currentPlaylist = [...allSongs];
+    if (!currentPlaylist || currentPlaylist.length === 0) {
+      if (allSongs && allSongs.length > 0) currentPlaylist = [...allSongs];
       else return;
     }
-    // Directly go to previous track on mobile click so backward always switches songs immediately
+
+    // Standard streaming player rule:
+    // If > 3 seconds into the track, restart current song.
+    // If <= 3 seconds into the track, navigate to previous song.
+    if (audio && audio.currentTime > 3) {
+      console.log('[Player] Previous action: restarting current song from beginning');
+      audio.currentTime = 0;
+      if (audio.paused && isPlaying) {
+        audio.play().then(() => setPlayingState(true)).catch(console.warn);
+      }
+      return;
+    }
+
     const prevIdx = (currentTrackIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+    const prevSong = currentPlaylist[prevIdx];
+    console.log(`[Player] Previous song: "${prevSong ? prevSong.title : 'Unknown'}" (Index ${prevIdx + 1}/${currentPlaylist.length})`);
     playTrackAtIndex(prevIdx);
   }
 
   // Audio Event Listeners
-  audio.addEventListener('play', () => setPlayingState(true));
-  audio.addEventListener('playing', () => setPlayingState(true));
-  audio.addEventListener('pause', () => setPlayingState(false));
+  audio.addEventListener('play', () => {
+    console.log('[Player] Audio event: play');
+    setPlayingState(true);
+  });
+  audio.addEventListener('playing', () => {
+    console.log('[Player] Audio event: playing');
+    setPlayingState(true);
+    setLoadingState(false);
+  });
+  audio.addEventListener('pause', () => {
+    console.log('[Player] Audio event: pause');
+    if (!_isTransitioning) {
+      setPlayingState(false);
+    }
+  });
+
   audio.addEventListener('error', () => {
-    console.error('Audio engine error event:', audio.error);
+    const err = audio.error;
+    const code = err ? err.code : 'unknown';
+    const msg = err ? (err.message || 'Audio decoding error') : 'Unknown audio error';
+    console.error(`[Player] Audio error [code=${code}]:`, msg);
     setPlayingState(false);
+    if (barBtnPlayPause) barBtnPlayPause.classList.remove('loading');
+    if (fsBtnPlayPause) fsBtnPlayPause.classList.remove('loading');
+    if (currentSong && !document.hidden) {
+      showToast(`⚠ Could not play "${currentSong.title}". Skipping...`);
+    }
+    // Auto-advance to next song after short delay if queue has tracks
+    if (currentPlaylist.length > 1) {
+      setTimeout(() => playNextTrack(true), 1500);
+    }
   });
 
   audio.addEventListener('loadedmetadata', () => {
@@ -1645,12 +2086,14 @@
     if (total && !isNaN(total) && total > 0) {
       const rounded = Math.round(total);
       barTotalTime.textContent = formatDuration(rounded);
+      if (fsTotalTime) fsTotalTime.textContent = formatDuration(rounded);
       if (currentSong) {
         currentSong.duration = rounded;
         document.querySelectorAll(`.row-dur-span[data-song-id="${currentSong.id}"]`).forEach(el => {
           el.textContent = formatDuration(rounded);
         });
       }
+      updateMediaSessionPlaybackState();
     }
   });
 
@@ -1675,16 +2118,54 @@
       if (fsProgressFill) fsProgressFill.style.width = `${pct}%`;
       if (fsProgressThumb) fsProgressThumb.style.left = `${pct}%`;
     }
-  });
-
-  audio.addEventListener('ended', () => {
-    if (isRepeat) {
-      audio.currentTime = 0;
-      audio.play().catch(console.error);
-    } else {
-      playNextTrack();
+    const now = Date.now();
+    if (now - _lastMsUpdate > 1000) {
+      _lastMsUpdate = now;
+      updateMediaSessionPlaybackState();
     }
   });
+
+  // Dedicated, Guarded Ended Event Handler for Mobile Background Continuous Playback
+  function handleSongEnded() {
+    const now = Date.now();
+    const songTitle = currentSong ? currentSong.title : 'Unknown track';
+    console.log(`[Player] Song ended: "${songTitle}"`);
+
+    // Race condition protection: Guard against rapid duplicate or trailing 'ended' events
+    // A track cannot naturally finish within 1.5 seconds of starting
+    if ((now - _lastEndedTimestamp) < 1500) {
+      console.warn('[Player] Ignored duplicate/trailing ended event within 1500ms window for:', songTitle);
+      return;
+    }
+    _lastEndedTimestamp = now;
+    if (currentSong) {
+      _lastEndedTrackId = currentSong.id;
+    }
+
+    if (isRepeat) {
+      console.log(`[Player] Repeat mode: replaying "${songTitle}"`);
+      audio.currentTime = 0;
+      audio.play().catch(err => console.warn('[Player] Repeat play error:', err));
+    } else {
+      console.log('[Player] Advancing automatically to next song in queue');
+      playNextTrack(true);
+    }
+  }
+
+  audio.addEventListener('ended', handleSongEnded);
+
+  // FIX-8: Loading / buffering state management.
+  // Shows a 'loading' CSS class on the play buttons during network stalls so users
+  // know the player is working, not frozen.
+  function setLoadingState(loading) {
+    if (barBtnPlayPause) barBtnPlayPause.classList.toggle('loading', loading);
+    if (fsBtnPlayPause) fsBtnPlayPause.classList.toggle('loading', loading);
+  }
+  audio.addEventListener('loadstart', () => setLoadingState(true));
+  audio.addEventListener('waiting', () => setLoadingState(true));
+  audio.addEventListener('stalled', () => setLoadingState(true));
+  audio.addEventListener('canplay', () => setLoadingState(false));
+  audio.addEventListener('canplaythrough', () => setLoadingState(false));
 
   // Seekbar Click & Drag
   function handleSeek(e) {
@@ -1741,9 +2222,29 @@
     }
   });
 
-  window.addEventListener('touchend', () => {
+  window.addEventListener('touchend', (e) => {
     if (!isSeeking) return;
     isSeeking = false;
+    // FIX-5+6: On touchend, e.touches is always empty. Must use e.changedTouches to get
+    // the final finger position, then commit the seek to audio.currentTime.
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      const rect = seekBar.getBoundingClientRect();
+      if (rect.width > 0) {
+        const pos = Math.max(0, Math.min(1, (e.changedTouches[0].clientX - rect.left) / rect.width));
+        const total = (audio.duration && !isNaN(audio.duration) && audio.duration > 0)
+          ? audio.duration
+          : (currentSong && currentSong.duration ? currentSong.duration : 0);
+        const targetTime = pos * total;
+        if (total > 0 && isFinite(targetTime)) {
+          audio.currentTime = targetTime;
+          progressFillBar.style.width = `${pos * 100}%`;
+          progressHandle.style.left = `${pos * 100}%`;
+          if (mobileMiniProgressFill) mobileMiniProgressFill.style.width = `${pos * 100}%`;
+          barCurrentTime.textContent = formatDuration(targetTime);
+          updateMediaSessionPlaybackState();
+        }
+      }
+    }
   });
 
   // Volume Bar Click & Drag
@@ -2324,7 +2825,7 @@
         const r = data.data;
 
         showToast(`Cloudinary Synced: ${r.discovered} discovered (${r.added} added, ${r.updated} updated).`);
-        await initAppData();
+        await initAppData(true);
       } catch (err) {
         console.error('Sync failed:', err);
         showToast('Sync error occurred');
@@ -2335,33 +2836,41 @@
   }
 
   // Automatic Background Library Updates (discovers newly uploaded songs automatically)
+  // Uses lightweight version endpoint (<1ms SQLite check) instead of downloading entire 1000-song catalog.
   setInterval(async () => {
     if (document.hidden || !isAuthenticated()) return;
     try {
-      const res = await fetch('/api/songs?limit=1000');
-      const json = await res.json();
-      const newSongs = (json && json.data) || [];
-      if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
-        console.log(`[Spotkify AutoUpdate] Discovered new songs: ${allSongs.length} -> ${newSongs.length}`);
-        allSongs = newSongs;
+      const didUpdate = await SongCatalogStore.checkVersionAndSyncIfNeeded();
+      if (didUpdate) {
+        console.log(`[Spotkify AutoUpdate] Discovered library updates: ${allSongs.length} songs available`);
         const homeRes = await fetch('/api/home');
         const homeJson = await homeRes.json();
         homeData = (homeJson && homeJson.data) || {};
         renderHomeView();
         renderSidebarPlaylists();
-        showToast(`Library updated: ${newSongs.length} songs available`);
       }
     } catch (e) {}
   }, 30000);
 
   document.addEventListener('visibilitychange', async () => {
+    if (document.hidden) {
+      console.log('[Player] Page hidden / screen locked — keeping audio active');
+      return;
+    }
+
+    // Screen unlocked / page visible again: Synchronize UI with actual playback state
+    console.log('[Player] Page visible / screen unlocked — synchronizing UI');
+    if (currentSong) {
+      try {
+        updateAllPlayerUI(currentSong);
+        setPlayingState(!audio.paused);
+      } catch (_) {}
+    }
+
     if (!document.hidden && isAuthenticated()) {
       try {
-        const res = await fetch('/api/songs?limit=1000');
-        const json = await res.json();
-        const newSongs = (json && json.data) || [];
-        if (newSongs.length > 0 && newSongs.length !== allSongs.length) {
-          allSongs = newSongs;
+        const didUpdate = await SongCatalogStore.checkVersionAndSyncIfNeeded();
+        if (didUpdate) {
           const homeRes = await fetch('/api/home');
           const homeJson = await homeRes.json();
           homeData = (homeJson && homeJson.data) || {};
@@ -2644,7 +3153,18 @@
     btnMobileUserAvatar.addEventListener('click', (e) => {
       e.stopPropagation();
       if (profileDropdown) {
-        profileDropdown.classList.toggle('hidden');
+        const isHidden = profileDropdown.classList.contains('hidden');
+        const backdrop = document.getElementById('profileDropdownBackdrop');
+        const container = document.getElementById('profileMenuContainer');
+        if (isHidden) {
+          profileDropdown.classList.remove('hidden');
+          if (backdrop) backdrop.classList.remove('hidden');
+          if (container) container.classList.add('open');
+        } else {
+          profileDropdown.classList.add('hidden');
+          if (backdrop) backdrop.classList.add('hidden');
+          if (container) container.classList.remove('open');
+        }
       }
     });
   }
@@ -2682,17 +3202,21 @@
   const btnLoginSubmit = document.getElementById('btnLoginSubmit');
   const btnProfileMenu = document.getElementById('btnProfileMenu');
   const profileDropdown = document.getElementById('profileDropdown');
+  const profileDropdownBackdrop = document.getElementById('profileDropdownBackdrop');
   const profileMenuContainer = document.getElementById('profileMenuContainer');
   const btnLogout = document.getElementById('btnLogout');
 
   function isAuthenticated() {
     const isAuth = localStorage.getItem('spotkify_auth') === 'true' || sessionStorage.getItem('spotkify_auth') === 'true';
     const user = (localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || '').trim().toLowerCase();
-    return isAuth && user === 'sharu';
+    return isAuth && (user === 'sharu' || user === 'you');
   }
 
   function getLoggedInUser() {
-    return localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || 'Sharu';
+    const user = (localStorage.getItem('spotkify_user') || sessionStorage.getItem('spotkify_user') || '').trim().toLowerCase();
+    if (user === 'you') return 'You';
+    if (user === 'sharu') return 'Sharu';
+    return user || 'Sharu';
   }
 
   function updateUserProfileDisplay(username) {
@@ -2719,6 +3243,7 @@
     } catch (err) {}
 
     if (isAuthenticated()) {
+      document.documentElement.classList.add('spotkify-unlocked');
       document.body.classList.remove('locked');
       if (loginGate) {
         loginGate.style.display = 'none';
@@ -2726,6 +3251,7 @@
       updateUserProfileDisplay();
       initAppData();
     } else {
+      document.documentElement.classList.remove('spotkify-unlocked');
       document.body.classList.add('locked');
       if (loginGate) {
         loginGate.classList.remove('fade-out');
@@ -2784,7 +3310,7 @@
       }
     }
 
-    // Unified Strict Login Handler
+    // Unified Secure Login Handler
     let isLoggingIn = false;
     async function doLogin() {
       if (isLoggingIn) return;
@@ -2797,61 +3323,55 @@
         return;
       }
 
-      // Strictly verify credentials: username sharu and password sharu@123 (or Sharu@123)
-      const isUserMatch = enteredUser.toLowerCase() === 'sharu';
-      const isPassMatch = enteredPass === 'sharu@123' || enteredPass === 'Sharu@123';
-
-      if (!isUserMatch || !isPassMatch) {
-        showLoginError('Incorrect username or password. Please try again.');
-        return;
-      }
-
       isLoggingIn = true;
       if (btnLoginSubmit) btnLoginSubmit.classList.add('loading');
 
-      const remember = chkRememberMe ? chkRememberMe.checked : true;
-      const authenticatedUsername = 'Sharu';
-
-      // Save credentials immediately
-      if (remember) {
-        localStorage.setItem('spotkify_auth', 'true');
-        localStorage.setItem('spotkify_user', 'sharu');
-      } else {
-        sessionStorage.setItem('spotkify_auth', 'true');
-        sessionStorage.setItem('spotkify_user', 'sharu');
-      }
-
-      // Immediately unlock the application with zero latency
-      if (loginAlertBox) loginAlertBox.classList.add('hidden');
-      document.body.classList.remove('locked');
-      if (loginGate) {
-        loginGate.classList.add('fade-out');
-        setTimeout(() => {
-          loginGate.style.display = 'none';
-        }, 300);
-      }
-
-      updateUserProfileDisplay(authenticatedUsername);
-      showToast(`Welcome to Spotify, ${authenticatedUsername}!`);
-      initAppData();
-
-      // Sync session token in background
       try {
-        const apiRes = await fetch('/api/auth/login', {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: 'sharu', password: enteredPass })
+          body: JSON.stringify({ username: enteredUser, password: enteredPass })
         });
-        const resData = await apiRes.json();
-        if (resData && resData.data && resData.data.token) {
-          if (remember) {
-            localStorage.setItem('spotkify_token', resData.data.token);
-          } else {
-            sessionStorage.setItem('spotkify_token', resData.data.token);
-          }
+
+        const resData = await response.json();
+
+        if (!response.ok || !resData || !resData.data) {
+          showLoginError('Incorrect username or password. Please try again.');
+          return;
         }
+
+        const authUser = resData.data.user;
+        const normalizedUser = (authUser.userName || enteredUser).toLowerCase();
+        const displayName = authUser.name || (normalizedUser === 'you' ? 'You' : 'Sharu');
+        const token = resData.data.token;
+        const remember = chkRememberMe ? chkRememberMe.checked : true;
+
+        if (remember) {
+          localStorage.setItem('spotkify_auth', 'true');
+          localStorage.setItem('spotkify_user', normalizedUser);
+          if (token) localStorage.setItem('spotkify_token', token);
+        } else {
+          sessionStorage.setItem('spotkify_auth', 'true');
+          sessionStorage.setItem('spotkify_user', normalizedUser);
+          if (token) sessionStorage.setItem('spotkify_token', token);
+        }
+
+        document.documentElement.classList.add('spotkify-unlocked');
+        document.body.classList.remove('locked');
+        if (loginAlertBox) loginAlertBox.classList.add('hidden');
+        if (loginGate) {
+          loginGate.classList.add('fade-out');
+          setTimeout(() => {
+            loginGate.style.display = 'none';
+          }, 300);
+        }
+
+        updateUserProfileDisplay(displayName);
+        showToast(`Welcome to Spotkify, ${displayName}!`);
+        initAppData();
       } catch (err) {
-        console.warn('Background token sync:', err);
+        console.warn('Login request failed:', err);
+        showLoginError('Incorrect username or password. Please try again.');
       } finally {
         isLoggingIn = false;
         if (btnLoginSubmit) btnLoginSubmit.classList.remove('loading');
@@ -2893,36 +3413,95 @@
       });
     });
 
-    // Profile Dropdown Toggle
+    // Profile Dropdown Toggle & Outside-Touch/Click Dismissal
+    function isProfileMenuOpen() {
+      return profileDropdown && !profileDropdown.classList.contains('hidden');
+    }
+
+    function openProfileMenu() {
+      if (!profileDropdown) return;
+      profileDropdown.classList.remove('hidden');
+      if (profileDropdownBackdrop) profileDropdownBackdrop.classList.remove('hidden');
+      if (profileMenuContainer) profileMenuContainer.classList.add('open');
+    }
+
+    function closeProfileMenu() {
+      if (!profileDropdown) return;
+      profileDropdown.classList.add('hidden');
+      if (profileDropdownBackdrop) profileDropdownBackdrop.classList.add('hidden');
+      if (profileMenuContainer) profileMenuContainer.classList.remove('open');
+    }
+
+    function toggleProfileMenu(e) {
+      if (e) {
+        e.stopPropagation();
+      }
+      if (isProfileMenuOpen()) {
+        closeProfileMenu();
+      } else {
+        openProfileMenu();
+      }
+    }
+
     if (btnProfileMenu && profileDropdown) {
       btnProfileMenu.addEventListener('click', (e) => {
-        e.stopPropagation();
-        profileDropdown.classList.toggle('hidden');
-        if (profileMenuContainer) {
-          profileMenuContainer.classList.toggle('open');
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (profileMenuContainer && !profileMenuContainer.contains(e.target)) {
-          profileDropdown.classList.add('hidden');
-          profileMenuContainer.classList.remove('open');
-        }
+        toggleProfileMenu(e);
       });
     }
 
+    // Tapping the full-screen transparent backdrop closes the dropdown
+    if (profileDropdownBackdrop) {
+      profileDropdownBackdrop.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeProfileMenu();
+      });
+      profileDropdownBackdrop.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        closeProfileMenu();
+      }, { passive: true });
+    }
+
+    // Dismiss dropdown when touching or clicking ANYWHERE on the screen outside the dropdown
+    const handleOutsideInteraction = (e) => {
+      if (!isProfileMenuOpen()) return;
+      const target = e.target instanceof Element ? e.target : (e.target ? e.target.parentElement : null);
+      if (!target) return;
+
+      // Do nothing if interacting inside the profile menu
+      if (profileDropdown && profileDropdown.contains(target)) return;
+
+      // Do nothing if interacting with the avatar toggle button itself
+      if (btnProfileMenu && btnProfileMenu.contains(target)) return;
+      if (btnMobileUserAvatar && btnMobileUserAvatar.contains(target)) return;
+
+      // Anywhere else on the screen was touched/clicked -> close dropdown immediately
+      closeProfileMenu();
+    };
+
+    // Capture phase listeners ensure dismissal on mobile and desktop even if child elements stop propagation
+    window.addEventListener('click', handleOutsideInteraction, true);
+    window.addEventListener('touchstart', handleOutsideInteraction, { capture: true, passive: true });
+    window.addEventListener('pointerdown', handleOutsideInteraction, true);
+
+    // Escape key closes the dropdown
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isProfileMenuOpen()) {
+        closeProfileMenu();
+      }
+    });
+
     // Logout Button Action
     if (btnLogout) {
-      btnLogout.addEventListener('click', () => {
+      btnLogout.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        closeProfileMenu();
+
         localStorage.removeItem('spotkify_auth');
         localStorage.removeItem('spotkify_user');
         localStorage.removeItem('spotkify_token');
         sessionStorage.removeItem('spotkify_auth');
         sessionStorage.removeItem('spotkify_user');
         sessionStorage.removeItem('spotkify_token');
-
-        if (profileDropdown) profileDropdown.classList.add('hidden');
-        if (profileMenuContainer) profileMenuContainer.classList.remove('open');
 
         // Stop audio immediately
         if (audio && !audio.paused) {
@@ -2932,6 +3511,7 @@
         }
 
         // Lock screen and display login gate
+        document.documentElement.classList.remove('spotkify-unlocked');
         document.body.classList.add('locked');
         if (loginGate) {
           loginGate.classList.remove('fade-out');
@@ -2949,30 +3529,206 @@
   }
 
   function initMobileAudioUnlock() {
-    const unlock = () => {
-      if (audio) {
-        const prevSrc = audio.src;
-        if (!prevSrc) {
-          audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-        }
+    const unlock = (e) => {
+      // If user directly tapped a playable element, that gesture directly initiates playback
+      if (e.target && e.target.closest && e.target.closest('.spotify-card, .table-row, .btn-play-pause, .bar-play-btn, #barBtnPlayPause, #mobileBarBtnPlayPause, #fsBtnPlayPause, .mobile-track-row')) {
+        window.removeEventListener('touchstart', unlock, true);
+        window.removeEventListener('click', unlock, true);
+        return;
+      }
+
+      window.removeEventListener('touchstart', unlock, true);
+      window.removeEventListener('click', unlock, true);
+      if (!audio) return;
+      const hasSrc = audio.src && audio.src !== '' && audio.src !== window.location.href;
+      if (hasSrc && audio.paused && !isPlaying && !_isTransitioning) {
         audio.play().then(() => {
-          if (!isPlaying) {
-            audio.pause();
-            if (!prevSrc) audio.removeAttribute('src');
-          }
+          if (!isPlaying && !_isTransitioning) audio.pause();
         }).catch(() => {});
       }
-      window.removeEventListener('touchstart', unlock, true);
-      window.removeEventListener('touchend', unlock, true);
-      window.removeEventListener('click', unlock, true);
     };
-    window.addEventListener('touchstart', unlock, true);
-    window.addEventListener('touchend', unlock, true);
-    window.addEventListener('click', unlock, true);
+    window.addEventListener('touchstart', unlock, { capture: true, passive: true });
+    window.addEventListener('click', unlock, { capture: true });
   }
 
   // Initialize Mobile Audio Unlock, MediaSession background handlers & Auth Gate
   initMobileAudioUnlock();
   initMediaSessionHandlers();
   setupAuthentication();
+
+  // ==========================================================================
+  // DYNAMIC AUDIO OUTPUT DEVICE DETECTION
+  // Reads the real connected audio device from the browser, picks the right
+  // icon (Bluetooth / wired headphone / speaker / phone / computer / tablet)
+  // and updates the mini-player badge, fullscreen badge, and device picker sheet.
+  // Re-runs automatically when the user plugs/unplugs headphones (devicechange).
+  // ==========================================================================
+
+  // --- SVG icon sets (12px for badge, 20px for picker, 18px for fullscreen) ---
+  const _DICONS = {
+    bluetooth: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>`,
+      md: `<svg class="device-item-icon green" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1ed760" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>`,
+      label: 'Bluetooth'
+    },
+    headphone: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>`,
+      md: `<svg class="device-item-icon green" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1ed760" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>`,
+      label: 'Wired'
+    },
+    phone: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>`,
+      md: `<svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="#1ed760"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>`,
+      label: 'Built-in speaker'
+    },
+    tablet: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H3V6h18v12zm-7 1H10v1h4v-1z"/></svg>`,
+      md: `<svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H3V6h18v12zm-7 1H10v1h4v-1z"/></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="#1ed760"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H3V6h18v12zm-7 1H10v1h4v-1z"/></svg>`,
+      label: 'Built-in speaker'
+    },
+    computer: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>`,
+      md: `<svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="#1ed760"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>`,
+      label: 'Built-in speakers'
+    },
+    speaker: {
+      sm: `<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>`,
+      md: `<svg class="device-item-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>`,
+      lg: `<svg viewBox="0 0 24 24" width="18" height="18" fill="#1ed760"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>`,
+      label: 'Speaker'
+    }
+  };
+
+  /** Classify a device label string into one of our icon keys */
+  function _classifyAudioDevice(label) {
+    const l = (label || '').toLowerCase();
+    // Bluetooth wireless
+    if (/bluetooth|wireless|buds|airpod|galaxy bud|bose|sony wh|sony wf|jbl|jabra|beats|sennheiser|plantronics|anker|soundcore|earphone|tws|neckband|realme buds|nothing ear|oneplus buds|pixel buds|mi true|redmi buds/.test(l)) {
+      return 'bluetooth';
+    }
+    // Wired headphones
+    if (/headphone|headset|wired|3\.5mm|aux|analog|in-ear|earphone|plugged/.test(l)) {
+      return 'headphone';
+    }
+    // Everything else → built-in (will be further refined by UA)
+    return null; // defer to UA-based fallback
+  }
+
+  /** Return the device type key based on user-agent for built-in speaker cases */
+  function _getDeviceTypeFromUA() {
+    const ua = navigator.userAgent;
+    if (/iPad/.test(ua)) return 'tablet';
+    if (/iPhone|iPod/.test(ua)) return 'phone';
+    if (/Android/.test(ua)) {
+      // Android tablet heuristic: typically no 'Mobile' in UA
+      return /Mobile/.test(ua) ? 'phone' : 'tablet';
+    }
+    return 'computer';
+  }
+
+  /** Return a friendly display name for the current device when no audio label is found */
+  function _getDefaultDeviceName() {
+    const ua = navigator.userAgent;
+    // Try to extract device model from Android UA
+    const androidModel = ua.match(/;\s*([^;]+)\sBuild\//);
+    if (androidModel) return androidModel[1].trim();
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/iPad/.test(ua)) return 'iPad';
+    if (/Android/.test(ua)) return 'Android Device';
+    if (/Macintosh|Mac OS/.test(ua)) return 'Mac';
+    if (/Windows/.test(ua)) return 'Windows PC';
+    return 'This Device';
+  }
+
+  /** Main detection function — async, safe to call at any time */
+  async function detectAudioOutput() {
+    let deviceName = '';
+    let deviceType = null;
+
+    try {
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.enumerateDevices === 'function') {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const outputs = devices.filter(d => d.kind === 'audiooutput');
+
+        for (const dev of outputs) {
+          // Skip 'default' and 'communications' virtual devices, focus on real ones
+          if (!dev.label || dev.deviceId === 'default' || dev.deviceId === 'communications') continue;
+          const classified = _classifyAudioDevice(dev.label);
+          if (classified) {
+            deviceName = dev.label;
+            deviceType = classified;
+            break;
+          } else if (!deviceName) {
+            // Store first labelled device even if not BT/wired — may be speaker
+            deviceName = dev.label;
+            deviceType = 'speaker';
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: no labelled device found (privacy restrictions or no permission)
+    if (!deviceName) {
+      deviceType = _getDeviceTypeFromUA();
+      deviceName = _getDefaultDeviceName();
+    } else if (!deviceType) {
+      deviceType = _getDeviceTypeFromUA();
+    }
+
+    _applyDeviceUI(deviceType, deviceName);
+  }
+
+  /** Push detected device info to all UI surfaces */
+  function _applyDeviceUI(type, name) {
+    const icons = _DICONS[type] || _DICONS.phone;
+    const statusLabel = icons.label;
+
+    // --- Mini player badge ---
+    const miniIconEl = document.getElementById('mobileDeviceIcon');
+    if (miniIconEl) miniIconEl.innerHTML = icons.sm;
+    if (mobileDeviceName) mobileDeviceName.textContent = name;
+
+    // --- Fullscreen badge ---
+    const fsIconEl = document.getElementById('fsDeviceIcon');
+    if (fsIconEl) fsIconEl.innerHTML = icons.lg;
+    if (fsDeviceName) fsDeviceName.textContent = name;
+
+    // --- Device picker sheet: first (current device) row ---
+    const pickerItem = document.getElementById('currentDeviceItem');
+    const pickerIconEl = document.getElementById('currentDeviceItemIcon');
+    const pickerNameEl = document.getElementById('currentDeviceItemName');
+    const pickerStatusEl = document.getElementById('currentDeviceItemStatus');
+
+    if (pickerItem) pickerItem.setAttribute('data-device', name);
+    if (pickerIconEl) pickerIconEl.innerHTML = icons.md;
+    if (pickerNameEl) pickerNameEl.textContent = name;
+    if (pickerStatusEl) {
+      if (type === 'bluetooth') {
+        pickerStatusEl.textContent = 'Connected \u2022 Bluetooth';
+        pickerStatusEl.style.color = '#1ed760';
+      } else if (type === 'headphone') {
+        pickerStatusEl.textContent = 'Connected \u2022 Wired';
+        pickerStatusEl.style.color = '#1ed760';
+      } else {
+        pickerStatusEl.textContent = `This device \u2022 ${statusLabel}`;
+        pickerStatusEl.style.color = '#b3b3b3';
+      }
+    }
+  }
+
+  // Run once on load, then auto-update whenever headphones are plugged/unplugged
+  detectAudioOutput();
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      // Small delay so the browser has time to update the device list
+      setTimeout(detectAudioOutput, 300);
+    });
+  }
+
 })();
+

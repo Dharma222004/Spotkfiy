@@ -46,6 +46,27 @@ router.get('/', async (req, res) => {
   const albumId = req.query.albumId;
   const userId = (req.user && req.user.id) || 'admin-user-id';
 
+  // For full catalog requests, check ETag / If-None-Match to save bandwidth & prevent redundant downloads
+  const isFullCatalog = limit >= 1000 && !genre && !language && !folder && !artist && !artistId && !albumId && page === 1;
+  let catalogEtag = null;
+  if (isFullCatalog) {
+    res.set('Cache-Control', 'private, no-cache, must-revalidate');
+    const meta = db.prepare(`
+      SELECT COUNT(*) as count, MAX(updated_at) as last_updated
+      FROM media_file
+      WHERE (is_active = 1 OR is_active IS NULL)
+    `).get();
+    const count = (meta && meta.count) || 0;
+    const lastUpdated = (meta && meta.last_updated) || '';
+    catalogEtag = `"${count}-${Buffer.from(String(lastUpdated)).toString('base64url').slice(0, 12)}"`;
+
+    const clientEtag = req.headers['if-none-match'];
+    if (clientEtag && (clientEtag === catalogEtag || clientEtag === `W/${catalogEtag}`)) {
+      res.setHeader('ETag', catalogEtag);
+      return res.status(304).end();
+    }
+  }
+
   let whereClauses = ['(m.is_active = 1 OR m.is_active IS NULL)'];
   let countParams = [];
   let selectParams = [userId];
@@ -105,6 +126,10 @@ router.get('/', async (req, res) => {
 
   const songs = songsRaw.map(formatSongRow);
 
+  if (catalogEtag) {
+    res.setHeader('ETag', catalogEtag);
+  }
+
   res.json({
     data: songs,
     pagination: {
@@ -115,6 +140,64 @@ router.get('/', async (req, res) => {
       hasNextPage: page * limit < totalCount
     }
   });
+});
+
+/**
+ * Fast lightweight catalog version & summary endpoint (<1ms SQLite check)
+ * GET /api/songs/version
+ */
+router.get('/version', (req, res) => {
+  try {
+    const meta = db.prepare(`
+      SELECT COUNT(*) as count, MAX(updated_at) as last_updated
+      FROM media_file
+      WHERE (is_active = 1 OR is_active IS NULL)
+    `).get();
+    const count = (meta && meta.count) || 0;
+    const lastUpdated = (meta && meta.last_updated) || '';
+    const version = `v-${count}-${Buffer.from(String(lastUpdated)).toString('base64url').slice(0, 12)}`;
+
+    res.set('Cache-Control', 'private, no-cache, must-revalidate');
+    res.json({
+      success: true,
+      data: {
+        count,
+        lastUpdated,
+        version
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+/**
+ * Alias for version/summary
+ * GET /api/songs/summary
+ */
+router.get('/summary', (req, res) => {
+  try {
+    const meta = db.prepare(`
+      SELECT COUNT(*) as count, MAX(updated_at) as last_updated
+      FROM media_file
+      WHERE (is_active = 1 OR is_active IS NULL)
+    `).get();
+    const count = (meta && meta.count) || 0;
+    const lastUpdated = (meta && meta.last_updated) || '';
+    const version = `v-${count}-${Buffer.from(String(lastUpdated)).toString('base64url').slice(0, 12)}`;
+
+    res.set('Cache-Control', 'private, no-cache, must-revalidate');
+    res.json({
+      success: true,
+      data: {
+        count,
+        lastUpdated,
+        version
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
 });
 
 /**
